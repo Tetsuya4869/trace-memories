@@ -1,16 +1,23 @@
-# trace_memories
+# TraceMemories 🛰️📸
 
-A new Flutter project.
+"TraceMemories" is an innovative location tracking app that turns your daily movements into a beautiful, interactive journey.
 
-## Getting Started
+## Features
+- 🛰️ **Real-time Tracking**: Background GPS logging with smooth polyline rendering.
+- 📸 **Photo Memories**: Automatic integration of phone gallery photos with geolocation data.
+- ⏳ **Interactive Timeline**: Scrub through your day to see exactly where you were and what you captured.
+- 🌌 **Glassmorphism UI**: Stunning, modern design with frosted glass effects and fluid animations.
+- 🏙️ **3D Map Experience**: Immersive dark-themed maps with 3D buildings and terrain.
 
-This project is a starting point for a Flutter application.
+## Security & Privacy
+This app is built with privacy in mind:
+- **Local Storage**: All tracking data stays on your device.
+- **Secure Tokens**: API keys and secrets are managed via `.env` and never pushed to version control.
 
-A few resources to get you started if this is your first Flutter project:
+## Setup
+1.  Add your Mapbox tokens to `.env` (refer to `DEVELOPMENT_RULES.md`).
+2.  Run `flutter pub get`.
+3.  Enable Developer Mode on your Windows/Android device.
+4.  Run `flutter run`.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Developed with ❤️ by TraceMemories Team.
