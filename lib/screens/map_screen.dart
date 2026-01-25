@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../theme/app_theme.dart';
 import '../widgets/photo_card.dart';
 import '../widgets/timeline_bar.dart';
@@ -12,6 +14,7 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
+  MapboxMap? _mapboxMap;
   double _timelineProgress = 0.3;
   
   // Sample data for demo
@@ -21,69 +24,57 @@ class _MapScreenState extends State<MapScreen> {
     {'emoji': '🌸', 'time': '04:00 PM', 'location': 'Park Center', 'top': 0.2, 'left': 0.7},
   ];
 
+  _onMapCreated(MapboxMap mapboxMap) {
+    _mapboxMap = mapboxMap;
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Set Mapbox access token
+    MapboxOptions.setAccessToken(dotenv.env['MAPBOX_PUBLIC_TOKEN'] ?? "");
+
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            colors: [AppTheme.secondaryDark, AppTheme.primaryDark],
-            center: Alignment.center,
-            radius: 1.5,
-          ),
-        ),
-        child: Stack(
-          children: [
-            // Grid overlay (placeholder for map)
-            _buildMapPlaceholder(),
-            
-            // Route line
-            _buildRouteLine(),
-            
-            // Photo cards
-            ..._buildPhotoCards(),
-            
-            // App title
-            _buildAppTitle(),
-            
-            // Timeline bar
-            _buildTimelineBar(),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildMapPlaceholder() {
-    return Positioned.fill(
-      child: Opacity(
-        opacity: 0.4,
-        child: CustomPaint(
-          painter: GridPainter(),
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildRouteLine() {
-    return Positioned(
-      top: MediaQuery.of(context).size.height * 0.5,
-      left: MediaQuery.of(context).size.width * 0.1,
-      right: MediaQuery.of(context).size.width * 0.1,
-      child: Container(
-        height: 4,
-        decoration: BoxDecoration(
-          gradient: AppTheme.routeGradient,
-          borderRadius: BorderRadius.circular(2),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.accentBlue.withOpacity(0.5),
-              blurRadius: 20,
+      body: Stack(
+        children: [
+          // Actual Mapbox View
+          MapWidget(
+            key: const ValueKey("mapWidget"),
+            styleUri: MapboxStyles.DARK, // Use built-in Dark style for glassmorphism
+            onMapCreated: _onMapCreated,
+            cameraOptions: CameraOptions(
+              center: Point(coordinates: Position(138.7278, 35.3606)).toJson(), // Near Mt. Fuji
+              zoom: 10.0,
             ),
-          ],
-        ),
+          ),
+          
+          // Floating overlay (Glassmorphism look)
+          IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppTheme.primaryDark.withOpacity(0.3),
+                    Colors.transparent,
+                    AppTheme.primaryDark.withOpacity(0.5),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          
+          // Photo cards
+          ..._buildPhotoCards(),
+          
+          // App title
+          _buildAppTitle(),
+          
+          // Timeline bar
+          _buildTimelineBar(),
+        ],
       ),
-    ).animate().fadeIn(duration: 500.ms).slideX(begin: -0.2, end: 0);
+    );
   }
   
   List<Widget> _buildPhotoCards() {
@@ -98,7 +89,7 @@ class _MapScreenState extends State<MapScreen> {
           time: photo['time'] as String,
           location: photo['location'] as String,
           onTap: () {
-            // TODO: Show photo detail
+            // TODO: Zoom map to this location
           },
         ).animate(delay: Duration(milliseconds: 100 * index)),
       );
@@ -115,6 +106,7 @@ class _MapScreenState extends State<MapScreen> {
             fontSize: 24,
             fontWeight: FontWeight.w800,
             letterSpacing: -1,
+            color: Colors.white,
           ),
           children: [
             TextSpan(text: 'Trace'),
@@ -145,29 +137,4 @@ class _MapScreenState extends State<MapScreen> {
       ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.5, end: 0),
     );
   }
-}
-
-// Custom painter for grid background
-class GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppTheme.surfaceDark
-      ..strokeWidth = 1;
-    
-    const spacing = 50.0;
-    
-    // Vertical lines
-    for (double x = 0; x < size.width; x += spacing) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    
-    // Horizontal lines
-    for (double y = 0; y < size.height; y += spacing) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
