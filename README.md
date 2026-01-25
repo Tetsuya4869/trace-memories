@@ -1,23 +1,95 @@
 # TraceMemories 🛰️📸
+> **Your life, visualized.** - 日々の移動を美しい軌跡と写真で振り返る、没入型位置情報アプリ。
 
-"TraceMemories" is an innovative location tracking app that turns your daily movements into a beautiful, interactive journey.
+---
 
-## Features
-- 🛰️ **Real-time Tracking**: Background GPS logging with smooth polyline rendering.
-- 📸 **Photo Memories**: Automatic integration of phone gallery photos with geolocation data.
-- ⏳ **Interactive Timeline**: Scrub through your day to see exactly where you were and what you captured.
-- 🌌 **Glassmorphism UI**: Stunning, modern design with frosted glass effects and fluid animations.
-- 🏙️ **3D Map Experience**: Immersive dark-themed maps with 3D buildings and terrain.
+## 📖 目次
+1. [🌟 アプリの概要](#-アプリの概要)
+2. [🚀 クイックスタート (セットアップ)](#-クイックスタート-セットアップ)
+3. [🛠 開発・デバッグガイド](#-開発デバッグガイド)
+4. [🛡 セキュリティ・開発ルール](#-セキュリティ開発ルール)
+5. [🏗 プロジェクト構造](#-プロジェクト構造)
+6. [📈 ロードマップ](#-ロードマップ)
 
-## Security & Privacy
-This app is built with privacy in mind:
-- **Local Storage**: All tracking data stays on your device.
-- **Secure Tokens**: API keys and secrets are managed via `.env` and never pushed to version control.
+---
 
-## Setup
-1.  Add your Mapbox tokens to `.env` (refer to `DEVELOPMENT_RULES.md`).
-2.  Run `flutter pub get`.
-3.  Enable Developer Mode on your Windows/Android device.
-4.  Run `flutter run`.
+## 🌟 アプリの概要
 
-Developed with ❤️ by TraceMemories Team.
+TraceMemoriesは、単なる位置情報記録アプリではありません。あなたの旅路を「3D地図」と「グラスモーフィズムUI」で彩り、映画のような振り返り体験を提供します。
+
+### 主な機能
+- 🛰️ **リアルタイム軌跡描画**: 移動ルートを滑らかな曲線で地図上に再現。
+- 📸 **思い出の自動マッピング**: 撮影した写真をAIが位置情報から地図上に配置。
+- ⏳ **タイムライン・スクラブ**: 時間軸を自由に操作して過去の場所へタイムトラベル。
+- 🏙️ **3Dダークマップ**: 夜の街並みを3Dビルと共に駆け抜ける没入感。
+
+---
+
+## 🚀 クイックスタート (セットアップ)
+
+開発環境を3分で整えるための手順です。
+
+### 1. 依存関係のインストール
+```bash
+flutter pub get
+```
+
+### 2. 機密情報の秘密鍵設定 (`.env`)
+プロジェクトルートに `.env` ファイルを作成し、Mapboxのトークンを記入します。
+```env
+MAPBOX_PUBLIC_TOKEN=pk.your_public_token
+MAPBOX_SECRET_TOKEN=sk.your_secret_token
+```
+> 💡 **重要**: このファイルは絶対に変更・プッシュしないでください（`.gitignore`で保護されています）。
+
+### 3. ビルド環境の準備
+- **Windows**: 「開発者モード」をオンにしてください。
+- **Android**: `android/gradle.properties` にSecret Tokenが設定されていることを確認。
+
+---
+
+## 🛠 開発・デバッグガイド
+詳細は [DEBUG_GUIDE.md](./DEBUG_GUIDE.md) を参照。
+
+- **位置シミュレーション**: iOS/Androidのシミュレーター機能で「移動」を再現可能。
+- **UI調整**: `lib/theme/app_theme.dart` を変えるだけで、全体の「透け感」を調整できます。
+- **困ったときは**: `flutter clean` を実行して再ビルドしてください。
+
+---
+
+## 🛡 セキュリティ・開発ルール
+詳細は [DEVELOPMENT_RULES.md](./DEVELOPMENT_RULES.md) を参照。
+
+### 🚫 絶対遵守
+- **機密情報の管理**: APIキーをコードに直接書かない。必ず `.env` を使用。
+- **ブランチ運用**: 開発は `feature/xxx` ブランチで行い、`main` への直接プッシュは避ける。
+
+### 🎨 デザイン・コード規約
+- **Emoji Commit**: ✨(機能追加), 🚀(リリース準備), 🐛(バグ修正) などの絵文字を使用。
+- **コードスタイル**: 読みやすさを最優先。ロジックは `services`、UIは `widgets` に分離。
+
+---
+
+## 🏗 プロジェクト構造
+```text
+lib/
+├── main.dart          # アプリのエントリーポイント
+├── screens/           # ページ単位のウィジェット（MapScreenなど）
+├── widgets/           # 再利用可能なUIパーツ（PhotoCardなど）
+├── services/          # ロジック（位置情報取得、写真解析）
+├── theme/             # デザインシステム（カラー、フォント、グラス効果）
+└── models/            # データ構造
+```
+
+---
+
+## 📈 ロードマップ
+- [x] コアUI & マップ統合
+- [x] リアルタイムトラッキング
+- [x] 写真ライブラリ連携
+- [ ] クラウド同期機能 (Firebase)
+- [ ] 思い出の動画書き出し機能
+
+---
+Developed with ❤️ by TraceMemories Team (Pi).
+質問や提案はいつでもDiscordで！🚀
