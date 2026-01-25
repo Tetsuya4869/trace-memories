@@ -7,6 +7,7 @@ import '../theme/app_theme.dart';
 import '../widgets/photo_card.dart';
 import '../widgets/timeline_bar.dart';
 import '../services/location_service.dart';
+import '../services/photo_service.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -18,49 +19,57 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   MapboxMap? _mapboxMap;
   final LocationService _locationService = LocationService();
+  final PhotoService _photoService = PhotoService();
+  
   double _timelineProgress = 0.3;
   List<geo.Position> _currentPath = [];
-  
-  // Sample data for demo
-  final List<Map<String, dynamic>> _samplePhotos = [
-    {'emoji': '🏔️', 'time': '10:30 AM', 'location': 'Mt. Fuji Area', 'top': 0.25, 'left': 0.1},
-    {'emoji': '🍜', 'time': '01:15 PM', 'location': 'Kawaguchiko', 'top': 0.4, 'left': 0.4},
-    {'emoji': '🌸', 'time': '04:00 PM', 'location': 'Park Center', 'top': 0.2, 'left': 0.7},
-  ];
+  List<PhotoMemory> _photoMemories = [];
+  bool _isLoadingPhotos = false;
 
   @override
   void initState() {
     super.initState();
-    _initTracking();
+    _initServices();
   }
 
-  Future<void> _initTracking() async {
-    final hasPermission = await _locationService.handlePermission();
-    if (hasPermission) {
+  Future<void> _initServices() async {
+    // Permission for location
+    final hasLocPermission = await _locationService.handlePermission();
+    if (hasLocPermission) {
       _locationService.startTracking();
       _locationService.pathStream.listen((path) {
-        setState(() {
-          _currentPath = path;
-        });
-        _updateMapPath();
+        if (mounted) {
+          setState(() {
+            _currentPath = path;
+          });
+        }
+      });
+    }
+
+    // Permission and fetching for photos
+    final hasPhotoPermission = await _photoService.requestPermission();
+    if (hasPhotoPermission) {
+      _loadPhotos();
+    }
+  }
+
+  Future<void> _loadPhotos() async {
+    setState(() => _isLoadingPhotos = true);
+    final memories = await _photoService.getMemoriesForDate(DateTime.now());
+    if (mounted) {
+      setState(() {
+        _photoMemories = memories;
+        _isLoadingPhotos = false;
       });
     }
   }
 
-  void _updateMapPath() {
-    if (_mapboxMap == null || _currentPath.isEmpty) return;
-    
-    // In Mapbox Maps Flutter v2, we use PolylineAnnotationManager or GeoJsonSource
-    // For simplicity in this step, let's focus on the UI and assume the path logic is evolving
-  }
-
   _onMapCreated(MapboxMap mapboxMap) {
     _mapboxMap = mapboxMap;
-    // Initial camera position
     _mapboxMap?.setCamera(CameraOptions(
-      center: Point(coordinates: Position(138.7278, 35.3606)).toJson(),
+      center: Point(coordinates: Position(139.7671, 35.6812)).toJson(), // Default to Tokyo
       zoom: 12.0,
-      pitch: 45.0, // Slight tilt for 3D feel
+      pitch: 45.0,
     ));
   }
 
@@ -78,24 +87,7 @@ class _MapScreenState extends State<MapScreen> {
             onMapCreated: _onMapCreated,
           ),
           
-          // Floating overlay for depth
-          IgnorePointer(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppTheme.primaryDark.withOpacity(0.4),
-                    Colors.transparent,
-                    AppTheme.primaryDark.withOpacity(0.6),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          
-          // Photo cards
+          // Photo cards (Real data)
           ..._buildPhotoCards(),
           
           // App title
@@ -104,8 +96,11 @@ class _MapScreenState extends State<MapScreen> {
           // Timeline bar
           _buildTimelineBar(),
           
-          // Tracking Status Indicator
+          // Status Indicator
           _buildStatusIndicator(),
+          
+          if (_isLoadingPhotos)
+            const Center(child: CircularProgressIndicator(color: AppTheme.accentBlue)),
         ],
       ),
     );
@@ -131,9 +126,9 @@ class _MapScreenState extends State<MapScreen> {
             ).animate(onPlay: (controller) => controller.repeat())
              .fadeIn(duration: 500.ms).fadeOut(delay: 500.ms),
             const SizedBox(width: 8),
-            const Text(
-              'Tracking On',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            Text(
+              '${_photoMemories.length} Memories',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -142,18 +137,27 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   List<Widget> _buildPhotoCards() {
-    return _samplePhotos.asMap().entries.map((entry) {
+    // In a real app, we would convert lat/lng to screen coordinates
+    // For now, we use a simple algorithm or let Mapbox handle markers
+    // To maintain the "floating card" look from the mockup:
+    return _photoMemories.asMap().entries.map((entry) {
       final index = entry.key;
       final photo = entry.value;
+      
+      // Temporary: scatter them for visual effect until projection is implemented
       return Positioned(
-        top: MediaQuery.of(context).size.height * (photo['top'] as double),
-        left: MediaQuery.of(context).size.width * (photo['left'] as double),
+        top: 100.0 + (index * 150.0 % 400.0),
+        left: 50.0 + (index * 100.0 % 250.0),
         child: PhotoCard(
-          emoji: photo['emoji'] as String,
-          time: photo['time'] as String,
-          location: photo['location'] as String,
+          imageBytes: photo.thumbnail,
+          emoji: '📸',
+          time: '${photo.dateTime.hour}:${photo.dateTime.minute.toString().padLeft(2, '0')}',
+          location: 'Memory ${index + 1}',
           onTap: () {
-            // Zoom to location
+            _mapboxMap?.setCamera(CameraOptions(
+              center: Point(coordinates: Position(photo.longitude!, photo.latitude!)).toJson(),
+              zoom: 15.0,
+            ));
           },
         ).animate(delay: Duration(milliseconds: 100 * index)),
       );

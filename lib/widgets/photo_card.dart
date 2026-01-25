@@ -4,7 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../theme/app_theme.dart';
 
 class PhotoCard extends StatelessWidget {
-  final String? imageUrl;
+  final Uint8List? imageBytes;
   final String emoji;
   final String time;
   final String location;
@@ -46,11 +46,11 @@ class PhotoCard extends StatelessWidget {
                         color: AppTheme.surfaceDark,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: imageUrl != null
+                      child: imageBytes != null
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                imageUrl!,
+                              child: Image.memory(
+                                imageBytes!,
                                 fit: BoxFit.cover,
                               ),
                             )

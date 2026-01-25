@@ -34,6 +34,8 @@
 	<array>
 		<string>location</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>撮影した思い出の写真を地図上の正しい場所に配置するために、写真ライブラリへのアクセスを使用します。</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
