@@ -24,6 +24,16 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>移動履歴を記録し、地図上に思い出の軌跡を描くために位置情報を使用します。</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>アプリを閉じていても移動履歴を継続的に記録するために、常に位置情報にアクセスします。</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>あなたの旅の軌跡を完璧に記録するために、位置情報を使用します。</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
