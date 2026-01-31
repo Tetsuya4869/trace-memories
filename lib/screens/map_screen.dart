@@ -6,8 +6,11 @@ import 'package:geolocator/geolocator.dart' as geo;
 import '../theme/app_theme.dart';
 import '../widgets/photo_card.dart';
 import '../widgets/timeline_bar.dart';
+import '../widgets/glass_container.dart';
+import '../widgets/summary_dialog.dart';
 import '../services/location_service.dart';
 import '../services/photo_service.dart';
+import '../services/summary_service.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -21,8 +24,9 @@ class _MapScreenState extends State<MapScreen> {
   PolylineAnnotationManager? _polylineManager;
   final LocationService _locationService = LocationService();
   final PhotoService _photoService = PhotoService();
+  final SummaryService _summaryService = SummaryService();
   
-  double _timelineProgress = 0.5;
+  double _timelineProgress = 1.0;
   List<geo.Position> _currentPath = [];
   List<PhotoMemory> _photoMemories = [];
   bool _isLoadingPhotos = false;
@@ -39,9 +43,7 @@ class _MapScreenState extends State<MapScreen> {
       _locationService.startTracking();
       _locationService.pathStream.listen((path) {
         if (mounted) {
-          setState(() {
-            _currentPath = path;
-          });
+          setState(() => _currentPath = path);
           _updateRouteLayer();
         }
       });
@@ -49,7 +51,8 @@ class _MapScreenState extends State<MapScreen> {
 
     final hasPhotoPermission = await _photoService.requestPermission();
     if (hasPhotoPermission) {
-      _loadPhotos();
+      await _loadPhotos();
+      _autoZoomToFirstMemory();
     }
   }
 
@@ -64,29 +67,33 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  void _autoZoomToFirstMemory() {
+    if (_photoMemories.isNotEmpty && _mapboxMap != null) {
+      final first = _photoMemories.last;
+      _mapboxMap?.setCamera(CameraOptions(
+        center: Point(coordinates: Position(first.longitude!, first.latitude!)).toJson(),
+        zoom: 15.0,
+        pitch: 60.0,
+      ));
+    }
+  }
+
   Future<void> _updateRouteLayer() async {
     if (_mapboxMap == null || _currentPath.isEmpty) return;
+    _polylineManager ??= await _mapboxMap?.annotations.createPolylineAnnotationManager();
 
-    if (_polylineManager == null) {
-      _polylineManager = await _mapboxMap?.annotations.createPolylineAnnotationManager();
-    }
-
-    // Filter path based on timeline progress
-    final visiblePointCount = (_currentPath.length * _timelineProgress).toInt();
-    if (visiblePointCount < 2) {
+    final visibleCount = (_currentPath.length * _timelineProgress).toInt();
+    if (visibleCount < 2) {
       _polylineManager?.deleteAll();
       return;
     }
 
-    final visiblePath = _currentPath.take(visiblePointCount).map((p) => 
-      [p.longitude, p.latitude]
-    ).toList();
-
+    final coords = _currentPath.take(visibleCount).map((p) => [p.longitude, p.latitude]).toList();
     _polylineManager?.deleteAll();
     _polylineManager?.create(PolylineAnnotationOptions(
-      geometry: LineString(coordinates: visiblePath).toJson(),
+      geometry: LineString(coordinates: coords).toJson(),
       lineColor: AppTheme.accentBlue.value,
-      lineWidth: 5.0,
+      lineWidth: 6.0,
       lineCap: LineCap.ROUND,
       lineJoin: LineJoin.ROUND,
     ));
@@ -94,31 +101,31 @@ class _MapScreenState extends State<MapScreen> {
 
   _onMapCreated(MapboxMap mapboxMap) {
     _mapboxMap = mapboxMap;
-    
-    // Set 3D terrain and buildings
-    _mapboxMap?.setCamera(CameraOptions(
-      center: Point(coordinates: Position(139.7671, 35.6812)).toJson(),
-      zoom: 14.0,
-      pitch: 60.0,
-      bearing: -20.0,
-    ));
-
-    // Wait for style to load then enable 3D buildings
     _mapboxMap?.style.styleLayerExists("3d-buildings").then((exists) {
       if (!exists) {
         _mapboxMap?.style.addLayer(FillExtrusionLayer(
-          id: "3d-buildings",
-          sourceId: "composite",
+          id: "3d-buildings", 
+          sourceId: "composite", 
           sourceLayer: "building",
-          minZoom: 15.0,
+          minZoom: 15.0, 
           filter: ["==", "extrude", "true"],
           fillExtrusionColor: Colors.grey.shade900.value,
           fillExtrusionHeight: ["get", "height"],
-          fillExtrusionBase: ["get", "min_height"],
-          fillExtrusionOpacity: 0.8,
+          fillExtrusionOpacity: 0.85,
         ));
       }
     });
+  }
+
+  void _showSummary() {
+    final summary = _summaryService.generateSummary(
+      path: _currentPath,
+      photos: _photoMemories,
+    );
+    showDialog(
+      context: context,
+      builder: (context) => SummaryDialog(summary: summary),
+    );
   }
 
   @override
@@ -132,31 +139,15 @@ class _MapScreenState extends State<MapScreen> {
             key: const ValueKey("mapWidget"),
             styleUri: MapboxStyles.DARK,
             onMapCreated: _onMapCreated,
+            onCameraChangeListener: (_) => setState(() {}),
           ),
           
-          // Gradient Overlay
-          IgnorePointer(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppTheme.primaryDark.withOpacity(0.6),
-                    Colors.transparent,
-                    AppTheme.primaryDark.withOpacity(0.8),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          
-          // Photo cards (Filtered by time)
-          ..._buildFilteredPhotoCards(),
+          ..._buildPhotoCards(),
           
           _buildAppTitle(),
           _buildTimelineBar(),
           _buildStatusIndicator(),
+          _buildSummaryButton(),
           
           if (_isLoadingPhotos)
             const Center(child: CircularProgressIndicator(color: AppTheme.accentBlue)),
@@ -165,35 +156,49 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
   
-  List<Widget> _buildFilteredPhotoCards() {
-    // Only show photos taken before current timeline progress
+  List<Widget> _buildPhotoCards() {
     final filtered = _photoMemories.where((m) {
       if (_photoMemories.isEmpty) return false;
-      final index = _photoMemories.indexOf(m);
-      return (index / _photoMemories.length) <= _timelineProgress;
+      final idx = _photoMemories.indexOf(m);
+      return (idx / _photoMemories.length) <= _timelineProgress;
     }).toList();
 
-    return filtered.asMap().entries.map((entry) {
-      final index = entry.key;
-      final photo = entry.value;
-      
-      return Positioned(
-        top: 150.0 + (index * 120.0 % 300.0),
-        left: 30.0 + (index * 80.0 % 200.0),
-        child: PhotoCard(
-          imageBytes: photo.thumbnail,
-          emoji: '📸',
-          time: '${photo.dateTime.hour}:${photo.dateTime.minute.toString().padLeft(2, '0')}',
-          location: 'Memory ${index + 1}',
-          onTap: () {
-            _mapboxMap?.setCamera(CameraOptions(
-              center: Point(coordinates: Position(photo.longitude!, photo.latitude!)).toJson(),
-              zoom: 16.0,
-            ));
-          },
-        ).animate().fadeIn(duration: 400.ms).scale(delay: 100.ms),
+    return filtered.map((photo) {
+      return FutureBuilder<ScreenCoordinate?>(
+        future: _mapboxMap?.pixelForCoordinate(Point(coordinates: Position(photo.longitude!, photo.latitude!)).toJson()),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData || snapshot.data == null) return const SizedBox.shrink();
+          final pos = snapshot.data!;
+          if (pos.x < -100 || pos.x > MediaQuery.of(context).size.width + 100 ||
+              pos.y < -100 || pos.y > MediaQuery.of(context).size.height + 100) {
+            return const SizedBox.shrink();
+          }
+
+          return Positioned(
+            left: pos.x - 60,
+            top: pos.y - 160,
+            child: PhotoCard(
+              imageBytes: photo.thumbnail,
+              emoji: '📸',
+              time: '${photo.dateTime.hour}:${photo.dateTime.minute.toString().padLeft(2, '0')}',
+              location: 'Memory',
+              onTap: () => _focusPhoto(photo),
+            ).animate().scale(duration: 400.ms, curve: Curves.backOut).fadeIn(),
+          );
+        },
       );
     }).toList();
+  }
+
+  void _focusPhoto(PhotoMemory photo) {
+    _mapboxMap?.flyTo(
+      CameraOptions(
+        center: Point(coordinates: Position(photo.longitude!, photo.latitude!)).toJson(),
+        zoom: 17.0,
+        pitch: 60.0,
+      ),
+      MapAnimationOptions(duration: 1000),
+    );
   }
   
   Widget _buildAppTitle() {
@@ -205,43 +210,29 @@ class _MapScreenState extends State<MapScreen> {
         children: [
           RichText(
             text: const TextSpan(
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -1.5,
-                color: Colors.white,
-              ),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -1.5),
               children: [
                 TextSpan(text: 'Trace'),
-                TextSpan(
-                  text: 'Memories',
-                  style: TextStyle(color: AppTheme.accentBlue),
-                ),
+                TextSpan(text: 'Memories', style: TextStyle(color: AppTheme.accentBlue)),
               ],
             ),
           ),
-          const Text(
-            'Your life, visualized.',
-            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-          ),
+          const Text('Your life, visualized.', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
         ],
       ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2, end: 0),
     );
   }
-  
+
   Widget _buildTimelineBar() {
     return Positioned(
       bottom: MediaQuery.of(context).padding.bottom + 30,
-      left: 20,
-      right: 20,
+      left: 20, right: 20,
       child: TimelineBar(
         selectedDate: DateTime.now(),
         progress: _timelineProgress,
-        isLive: _timelineProgress > 0.9,
+        isLive: _timelineProgress > 0.95,
         onProgressChanged: (value) {
-          setState(() {
-            _timelineProgress = value;
-          });
+          setState(() => _timelineProgress = value);
           _updateRouteLayer();
         },
       ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.5, end: 0),
@@ -260,12 +251,24 @@ class _MapScreenState extends State<MapScreen> {
             const Icon(Icons.auto_awesome, size: 14, color: AppTheme.accentBlue),
             const SizedBox(width: 6),
             Text(
-              '${_photoMemories.length} memories found',
+              '${_photoMemories.length} memories',
               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
             ),
           ],
         ),
       ),
     ).animate().fadeIn(delay: 800.ms);
+  }
+
+  Widget _buildSummaryButton() {
+    return Positioned(
+      bottom: MediaQuery.of(context).padding.bottom + 120,
+      right: 20,
+      child: FloatingActionButton(
+        onPressed: _showSummary,
+        backgroundColor: AppTheme.accentBlue,
+        child: const Icon(Icons.history_edu, color: AppTheme.primaryDark),
+      ).animate().scale(delay: 1000.ms),
+    );
   }
 }
