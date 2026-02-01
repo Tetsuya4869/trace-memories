@@ -1,11 +1,11 @@
 {
-    "name": "trace_memories",
-    "short_name": "trace_memories",
+    "name": "TraceMemories",
+    "short_name": "TraceMemories",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0f0f23",
+    "theme_color": "#0f0f23",
+    "description": "あなたの日々を、地図に刻む。日々の移動を美しい軌跡として可視化するアプリ。",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

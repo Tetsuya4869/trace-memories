@@ -57,6 +57,10 @@ dependencies:
   google_fonts: ^6.2.1
   flutter_dotenv: ^5.1.0
 
+  # Web Map (OpenStreetMap)
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
