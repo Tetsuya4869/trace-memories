@@ -12,8 +12,8 @@ class AppTheme {
   static const Color textSecondary = Color(0xFF94A3B8);
   
   // Glassmorphism
-  static const Color glassBackground = Color(0x1AFFFFFF); // 10% white
-  static const Color glassBorder = Color(0x33FFFFFF); // 20% white
+  static const Color glassBackground = Color(0x1AFFFFFF);
+  static const Color glassBorder = Color(0x33FFFFFF);
   static const double glassBlur = 12.0;
   
   // Gradients
@@ -21,11 +21,11 @@ class AppTheme {
     colors: [accentBlue, accentPurple],
   );
   
-  static const LinearGradient backgroundGradient = RadialGradient(
+  static const RadialGradient backgroundGradient = RadialGradient(
     colors: [secondaryDark, primaryDark],
     center: Alignment.center,
     radius: 1.0,
-  ) as LinearGradient;
+  );
   
   // Theme Data
   static ThemeData get darkTheme {

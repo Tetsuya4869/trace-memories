@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -12,7 +13,7 @@ class PhotoCard extends StatelessWidget {
   
   const PhotoCard({
     super.key,
-    this.imageUrl,
+    this.imageBytes,
     required this.emoji,
     required this.time,
     required this.location,
@@ -38,7 +39,6 @@ class PhotoCard extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Photo placeholder or actual image
                     Container(
                       width: double.infinity,
                       height: 100,
@@ -62,7 +62,6 @@ class PhotoCard extends StatelessWidget {
                             ),
                     ),
                     const SizedBox(height: 8),
-                    // Info
                     Text(
                       time,
                       style: const TextStyle(

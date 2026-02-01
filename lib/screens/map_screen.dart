@@ -71,7 +71,7 @@ class _MapScreenState extends State<MapScreen> {
     if (_photoMemories.isNotEmpty && _mapboxMap != null) {
       final first = _photoMemories.last;
       _mapboxMap?.setCamera(CameraOptions(
-        center: Point(coordinates: Position(first.longitude!, first.latitude!)).toJson(),
+        center: Point(coordinates: Position(first.longitude!, first.latitude!)),
         zoom: 15.0,
         pitch: 60.0,
       ));
@@ -88,33 +88,17 @@ class _MapScreenState extends State<MapScreen> {
       return;
     }
 
-    final coords = _currentPath.take(visibleCount).map((p) => [p.longitude, p.latitude]).toList();
+    final coords = _currentPath.take(visibleCount).map((p) => Position(p.longitude, p.latitude)).toList();
     _polylineManager?.deleteAll();
     _polylineManager?.create(PolylineAnnotationOptions(
-      geometry: LineString(coordinates: coords).toJson(),
+      geometry: LineString(coordinates: coords),
       lineColor: AppTheme.accentBlue.value,
       lineWidth: 6.0,
-      lineCap: LineCap.ROUND,
-      lineJoin: LineJoin.ROUND,
     ));
   }
 
   _onMapCreated(MapboxMap mapboxMap) {
     _mapboxMap = mapboxMap;
-    _mapboxMap?.style.styleLayerExists("3d-buildings").then((exists) {
-      if (!exists) {
-        _mapboxMap?.style.addLayer(FillExtrusionLayer(
-          id: "3d-buildings", 
-          sourceId: "composite", 
-          sourceLayer: "building",
-          minZoom: 15.0, 
-          filter: ["==", "extrude", "true"],
-          fillExtrusionColor: Colors.grey.shade900.value,
-          fillExtrusionHeight: ["get", "height"],
-          fillExtrusionOpacity: 0.85,
-        ));
-      }
-    });
   }
 
   void _showSummary() {
@@ -165,7 +149,7 @@ class _MapScreenState extends State<MapScreen> {
 
     return filtered.map((photo) {
       return FutureBuilder<ScreenCoordinate?>(
-        future: _mapboxMap?.pixelForCoordinate(Point(coordinates: Position(photo.longitude!, photo.latitude!)).toJson()),
+        future: _mapboxMap?.pixelForCoordinate(Point(coordinates: Position(photo.longitude!, photo.latitude!))),
         builder: (context, snapshot) {
           if (!snapshot.hasData || snapshot.data == null) return const SizedBox.shrink();
           final pos = snapshot.data!;
@@ -183,7 +167,7 @@ class _MapScreenState extends State<MapScreen> {
               time: '${photo.dateTime.hour}:${photo.dateTime.minute.toString().padLeft(2, '0')}',
               location: 'Memory',
               onTap: () => _focusPhoto(photo),
-            ).animate().scale(duration: 400.ms, curve: Curves.backOut).fadeIn(),
+            ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack).fadeIn(),
           );
         },
       );
@@ -193,7 +177,7 @@ class _MapScreenState extends State<MapScreen> {
   void _focusPhoto(PhotoMemory photo) {
     _mapboxMap?.flyTo(
       CameraOptions(
-        center: Point(coordinates: Position(photo.longitude!, photo.latitude!)).toJson(),
+        center: Point(coordinates: Position(photo.longitude!, photo.latitude!)),
         zoom: 17.0,
         pitch: 60.0,
       ),

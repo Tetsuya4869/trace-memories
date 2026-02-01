@@ -21,7 +21,7 @@ class PhotoMemory {
 
 class PhotoService {
   Future<bool> requestPermission() async {
-    final PermissionState ps = await PhotoManager.requestPermissionExtended();
+    final PermissionState ps = await PhotoManager.requestPermissionExtend();
     return ps.isAuth;
   }
 
@@ -39,20 +39,19 @@ class PhotoService {
 
     final List<AssetEntity> entities = await paths[0].getAssetListRange(
       start: 0,
-      end: 100, // Fetch recent 100 images
+      end: 100,
     );
 
     List<PhotoMemory> memories = [];
     
     for (var entity in entities) {
-      // Check if photo was taken on the specific date
       if (entity.createDateTime.year == date.year &&
           entity.createDateTime.month == date.month &&
           entity.createDateTime.day == date.day) {
         
         final latlng = await entity.latlngAsync();
         
-        if (latlng.latitude != null && latlng.longitude != null) {
+        if (latlng != null && latlng.latitude != 0 && latlng.longitude != 0) {
           final thumbnail = await entity.thumbnailDataWithSize(
             const ThumbnailSize(200, 200),
           );

@@ -70,7 +70,7 @@ class SummaryDialog extends StatelessWidget {
               ),
             ],
           ),
-        ).animate().scale(duration: 400.ms, curve: Curves.backOut).fadeIn(),
+        ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack).fadeIn(),
       ),
     );
   }
