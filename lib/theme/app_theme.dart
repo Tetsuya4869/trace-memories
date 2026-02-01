@@ -20,11 +20,20 @@ class AppTheme {
   static const LinearGradient routeGradient = LinearGradient(
     colors: [accentBlue, accentPurple],
   );
-  
+
   static const RadialGradient backgroundGradient = RadialGradient(
     colors: [secondaryDark, primaryDark],
     center: Alignment.center,
     radius: 1.0,
+  );
+
+  static const LinearGradient glassGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0x33FFFFFF), // 20% white
+      Color(0x1AFFFFFF), // 10% white
+    ],
   );
   
   // Theme Data
