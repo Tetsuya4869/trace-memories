@@ -165,7 +165,7 @@ class _MapScreenState extends State<MapScreen> {
               imageBytes: photo.thumbnail,
               emoji: '📸',
               time: '${photo.dateTime.hour}:${photo.dateTime.minute.toString().padLeft(2, '0')}',
-              location: 'Memory',
+              location: 'この場所で',
               onTap: () => _focusPhoto(photo),
             ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack).fadeIn(),
           );
@@ -201,7 +201,7 @@ class _MapScreenState extends State<MapScreen> {
               ],
             ),
           ),
-          const Text('Your life, visualized.', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+          const Text('あなたの日々を、地図に刻む', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, letterSpacing: 1.5)),
         ],
       ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2, end: 0),
     );
@@ -235,8 +235,8 @@ class _MapScreenState extends State<MapScreen> {
             const Icon(Icons.auto_awesome, size: 14, color: AppTheme.accentBlue),
             const SizedBox(width: 6),
             Text(
-              '${_photoMemories.length} memories',
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+              '${_photoMemories.length} の思い出',
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
             ),
           ],
         ),
