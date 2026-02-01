@@ -3,21 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'theme/app_theme.dart';
-import 'screens/map_screen.dart';
-import 'screens/web_map_screen.dart';
+import 'screens/subscription_list_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables (skip on web if .env not available)
   if (!kIsWeb) {
-    await dotenv.load(fileName: ".env");
-  } else {
-    // Web版では.envを使わない（デモモード）
     try {
       await dotenv.load(fileName: ".env");
     } catch (_) {
-      // .env がなくても続行（Web版はデモモード）
+      // .env がなくても続行
     }
   }
 
@@ -34,20 +30,19 @@ void main() async {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
 
-  runApp(const TraceMemoriesApp());
+  runApp(const SubscriptionManagerApp());
 }
 
-class TraceMemoriesApp extends StatelessWidget {
-  const TraceMemoriesApp({super.key});
+class SubscriptionManagerApp extends StatelessWidget {
+  const SubscriptionManagerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'TraceMemories',
+      title: 'サブスク管理',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      // Web版ではデモモードのWebMapScreen、それ以外ではMapScreen
-      home: kIsWeb ? const WebMapScreen() : const MapScreen(),
+      home: const SubscriptionListScreen(),
     );
   }
 }
