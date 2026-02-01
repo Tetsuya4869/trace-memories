@@ -9,15 +9,12 @@ import 'screens/web_map_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables (skip on web if .env not available)
+  // Load environment variables (native only, web uses demo mode)
   if (!kIsWeb) {
-    await dotenv.load(fileName: ".env");
-  } else {
-    // Web版では.envを使わない（デモモード）
     try {
       await dotenv.load(fileName: ".env");
     } catch (_) {
-      // .env がなくても続行（Web版はデモモード）
+      // .env がなくても続行
     }
   }
 
