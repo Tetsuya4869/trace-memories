@@ -25,17 +25,17 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>移動履歴を記録し、地図上に思い出の軌跡を描くために位置情報を使用します。</string>
+	<string>あなたの歩いた道のりを、美しい軌跡として地図に描きます。今日どこを歩いたか、振り返る楽しみをお届けします。</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>アプリを閉じていても移動履歴を継続的に記録するために、常に位置情報にアクセスします。</string>
+	<string>アプリを閉じている間も、あなたの旅路をそっと記録し続けます。一日の終わりに、歩いた軌跡を眺める——そんな体験をお届けします。</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>あなたの旅の軌跡を完璧に記録するために、位置情報を使用します。</string>
+	<string>バックグラウンドでも軌跡を記録し、あなたの一日をより完全な形で残します。</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
 	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>撮影した思い出の写真を地図上の正しい場所に配置するために、写真ライブラリへのアクセスを使用します。</string>
+	<string>あなたが撮った写真を、撮影した場所と一緒に地図上に並べます。「あの時、ここにいた」——そんな思い出を可視化します。</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

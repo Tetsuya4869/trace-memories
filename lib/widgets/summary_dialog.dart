@@ -26,11 +26,11 @@ class SummaryDialog extends StatelessWidget {
                   const Icon(Icons.auto_awesome, color: AppTheme.accentBlue, size: 28),
                   const SizedBox(width: 12),
                   const Text(
-                    'Daily Summary',
+                    '今日のふりかえり',
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: 20,
                       fontWeight: FontWeight.w900,
-                      letterSpacing: -0.5,
+                      letterSpacing: 1.0,
                     ),
                   ),
                   const Spacer(),
@@ -63,8 +63,8 @@ class SummaryDialog extends StatelessWidget {
                     ),
                   ),
                   child: const Text(
-                    'Awesome!',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    'おやすみなさい',
+                    style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 2.0),
                   ),
                 ),
               ),
