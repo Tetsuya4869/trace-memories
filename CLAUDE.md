@@ -1,172 +1,180 @@
 # CLAUDE.md — TraceMemories
 
-This file provides context for AI assistants working on the TraceMemories codebase.
+このファイルは、AIアシスタントが本コードベースを理解・開発するためのガイドです。
 
-## Project Overview
+## プロジェクト概要
 
-TraceMemories is a Flutter mobile app that visualizes daily life through location tracking and photo mapping. It records GPS traces as curves on a dark 3D map, places geotagged photos, and lets users scrub through their day via a timeline slider. A daily summary feature generates poetic reflections on the user's journey.
+TraceMemoriesは、日々の移動を美しい軌跡として3Dダークマップ上に可視化し、位置情報付き写真を自動配置するFlutterアプリ。タイムラインスクラバーで一日を映画のように再生でき、一日の終わりにポエティックなふりかえりサマリーを生成する。
 
-**Tagline:** あなたの日々を、地図に刻む (Carve your days into a map)
+**タグライン:** あなたの日々を、地図に刻む
 
-## Tech Stack
+## 技術スタック
 
-- **Language:** Dart (SDK ^3.10.7)
-- **Framework:** Flutter with Material Design 3
-- **Maps:** mapbox_maps_flutter (native iOS/Android), flutter_map + OpenStreetMap (web fallback)
-- **Location:** geolocator + permission_handler
-- **Photos:** photo_manager
-- **UI/Animation:** flutter_animate, google_fonts (Inter)
-- **Env:** flutter_dotenv (.env file for API tokens)
-- **Storage:** sqflite, path_provider (prepared for future use)
-- **Linting:** flutter_lints (analysis_options.yaml)
+- **言語:** Dart (SDK ^3.10.7)
+- **フレームワーク:** Flutter + Material Design 3
+- **地図:** mapbox_maps_flutter (ネイティブ iOS/Android)、flutter_map + OpenStreetMap (Web版フォールバック)
+- **位置情報:** geolocator + permission_handler
+- **写真:** photo_manager
+- **UI/アニメーション:** flutter_animate、google_fonts (Interフォント)
+- **環境変数:** flutter_dotenv (.envファイルでAPIトークン管理)
+- **ストレージ:** sqflite、path_provider (将来利用予定)
+- **リンター:** flutter_lints (analysis_options.yaml)
 
-## Common Commands
+## よく使うコマンド
 
 ```bash
-# Install dependencies
+# 依存関係のインストール
 flutter pub get
 
-# Run static analysis / linting
+# 静的解析 / リント
 flutter analyze
 
-# Run tests
+# テスト実行
 flutter test
 
-# Deep clean (use when builds break)
+# ディープクリーン（ビルドが壊れた時に使用）
 flutter clean && flutter pub get
 
-# Run on specific platform
-flutter run -d chrome        # Web demo mode
-flutter run -d ios            # iOS simulator/device
-flutter run -d android        # Android emulator/device
+# プラットフォーム別実行
+flutter run -d chrome        # Web版デモモード
+flutter run -d ios            # iOS シミュレータ/実機
+flutter run -d android        # Android エミュレータ/実機
 ```
 
-## Project Structure
+## プロジェクト構造
 
 ```
 lib/
-├── main.dart                 # App entry point, initialization
+├── main.dart                 # エントリーポイント、アプリ初期化
 ├── screens/
-│   ├── map_screen.dart       # Native map screen (iOS/Android via Mapbox)
-│   └── web_map_screen.dart   # Web demo mode (OpenStreetMap fallback)
+│   ├── map_screen.dart       # ネイティブ地図画面 (Mapbox, iOS/Android)
+│   └── web_map_screen.dart   # Webデモモード (OpenStreetMap フォールバック)
 ├── widgets/
-│   ├── glass_container.dart  # Glassmorphism base component
-│   ├── photo_card.dart       # Photo memory card display
-│   ├── timeline_bar.dart     # Day timeline scrubber
-│   └── summary_dialog.dart   # Daily summary dialog
+│   ├── glass_container.dart  # グラスモーフィズム基本コンポーネント
+│   ├── photo_card.dart       # 写真メモリーカード表示
+│   ├── timeline_bar.dart     # タイムラインスクラバー
+│   └── summary_dialog.dart   # ふりかえりサマリーダイアログ
 ├── services/
-│   ├── location_service.dart # GPS tracking via geolocator streams
-│   ├── photo_service.dart    # Photo library integration
-│   ├── summary_service.dart  # Template-based poetic summary generation
-│   └── demo_data.dart        # Mock data for web demo mode
+│   ├── location_service.dart # GPS追跡 (geolocator Streamベース)
+│   ├── photo_service.dart    # 写真ライブラリ連携
+│   ├── summary_service.dart  # テンプレートベースのサマリー生成
+│   └── demo_data.dart        # Webデモ用モックデータ
 └── theme/
-    └── app_theme.dart        # Design system: colors, glassmorphism, typography
+    └── app_theme.dart        # デザインシステム: カラー、グラスモーフィズム、タイポグラフィ
 ```
 
-### Platform directories
+### プラットフォームディレクトリ
 
-`android/`, `ios/`, `macos/`, `linux/`, `windows/`, `web/` — Platform-specific build configurations. Generally don't need changes unless adding native plugins or platform permissions.
+`android/`, `ios/`, `macos/`, `linux/`, `windows/`, `web/` — プラットフォーム固有のビルド設定。ネイティブプラグイン追加やパーミッション変更時のみ編集が必要。
 
-## Architecture & Patterns
+## アーキテクチャとパターン
 
-### State management
-- Screens use **StatefulWidget** with local state
-- Services are instantiated directly in screens (no DI container)
-- Reactive data flow via **Dart Streams** (e.g., `LocationService.pathStream`)
+### 状態管理
+- 画面は **StatefulWidget** + ローカルstate で管理
+- ServiceクラスはScreenで直接インスタンス化 (DIコンテナ不使用)
+- **Dart Stream** によるリアクティブなデータフロー (例: `LocationService.pathStream`)
 
-### Widget composition
-- Screens use `Stack` for layered UI (map base + overlays)
-- Reusable widgets (`GlassContainer`, `PhotoCard`, `TimelineBar`) are pure presentation — no business logic
-- Configuration via constructor parameters only
+### ウィジェット構成
+- 画面は `Stack` でレイヤード UI (地図ベース + オーバーレイ群)
+- 再利用ウィジェット (`GlassContainer`, `PhotoCard`, `TimelineBar`) はプレゼンテーション専用 — ビジネスロジックを含まない
+- コンストラクタパラメータのみで設定
 
-### Map rendering
-- Native: `MapboxMap` + `PolylineAnnotationManager` for route drawing
-- Web: `FlutterMap` controller + `PolylineLayer` with CartoDB Dark tiles
-- Both support animated camera movements (`flyTo()`)
+### 地図レンダリング
+- ネイティブ: `MapboxMap` + `PolylineAnnotationManager` でルート描画
+- Web: `FlutterMap` + `PolylineLayer` (CartoDB Dark タイル)
+- 両方とも `flyTo()` によるカメラアニメーション対応
 
-### Timeline system
-- Single progress float (0.0–1.0) controls route visibility and photo filtering
-- Route polyline redrawn on each frame based on progress
-- Photo cards positioned via `pixelForCoordinate()` (lat/lng → screen pixels)
+### タイムラインシステム
+- 進捗値 float (0.0〜1.0) でルート表示と写真フィルタリングを制御
+- 進捗に応じてポリラインを毎フレーム再描画
+- `pixelForCoordinate()` で緯度経度をスクリーン座標に変換して写真カードを配置
 
-## Design System
+## デザインシステム
 
-### Colors (dark glassmorphism theme)
-- Primary dark: `#0F172A` — Secondary dark: `#1E293B` — Surface: `#334155`
-- Accent blue: `#38BDF8` — Accent purple: `#818CF8`
-- Text: `#FFFFFF` (primary), `#94A3B8` (secondary)
+### カラーパレット (ダークグラスモーフィズムテーマ)
+- プライマリダーク: `#0F172A` — セカンダリダーク: `#1E293B` — サーフェス: `#334155`
+- アクセントブルー: `#38BDF8` — アクセントパープル: `#818CF8`
+- テキスト: `#FFFFFF` (プライマリ)、`#94A3B8` (セカンダリ)
 
-### Glassmorphism constants
-- Background: 10% white overlay — Border: 20% white — Blur: 12px
-- Corner radii: 20px (containers), 12px (cards), 8px (small elements)
+### グラスモーフィズム定数
+- 背景: 10%ホワイトオーバーレイ — ボーダー: 20%ホワイト — ブラー: 12px
+- 角丸: 20px (コンテナ)、12px (カード)、8px (小要素)
 
-### Typography
-- Font family: Inter via google_fonts
-- Material Design 3 text scales
+### タイポグラフィ
+- フォント: Inter (google_fonts経由)
+- Material Design 3 テキストスケール
 
-## Secrets & Environment
+## 機密情報と環境設定
 
-**Critical:** Never hardcode API keys in source code.
+**重要:** ソースコード内にAPIキーを直接記述することは厳禁。
 
-- `.env` — Mapbox tokens (`MAPBOX_PUBLIC_TOKEN`, `MAPBOX_SECRET_TOKEN`). Loaded by flutter_dotenv at startup. Listed as a Flutter asset in pubspec.yaml.
-- `android/gradle.properties` — `MAPBOX_DOWNLOADS_TOKEN` for Mapbox SDK access
-- `ios/MapboxSecrets.plist` — iOS Mapbox authentication
-- All secret files are in `.gitignore` and must never be committed
+- `.env` — Mapboxトークン (`MAPBOX_PUBLIC_TOKEN`, `MAPBOX_SECRET_TOKEN`)。flutter_dotenvで起動時にロード。pubspec.yamlでFlutterアセットとして登録済み。
+- `android/gradle.properties` — `MAPBOX_DOWNLOADS_TOKEN` (Mapbox SDKダウンロード用)
+- `ios/MapboxSecrets.plist` — iOS用Mapbox認証
+- 全ての機密ファイルは `.gitignore` に登録済み。絶対にコミットしないこと。
 
-The web demo mode works without `.env` by falling back to OpenStreetMap tiles.
+Web版デモモードは `.env` なしでも OpenStreetMap タイルにフォールバックして動作する。
 
-## Code Conventions
+## コード規約
 
-- Follow **Flutter/Dart official style guide** (enforced by flutter_lints)
-- Use `const` constructors wherever possible for performance
-- Null safety enabled (Dart 3.10+)
-- File naming: `snake_case.dart`
-- Class naming: `PascalCase`
-- Private members: underscore prefix (`_currentPath`)
+- **Flutter/Dart公式スタイルガイド** に準拠 (flutter_lintsで強制)
+- パフォーマンスのため `const` コンストラクタを積極的に使用
+- Null Safety有効 (Dart 3.10+)
+- ファイル名: `snake_case.dart`
+- クラス名: `PascalCase`
+- プライベートメンバー: アンダースコアプレフィックス (`_currentPath`)
 
-### Folder rules
-- `lib/screens/` — Screen-level widgets only
-- `lib/widgets/` — Reusable, presentation-only components
-- `lib/services/` — Business logic, no UI code
-- `lib/theme/` — Design tokens and theme definitions
-- `lib/models/` — Data model classes (for future use)
+### フォルダルール
+- `lib/screens/` — 画面単位のウィジェットのみ
+- `lib/widgets/` — 再利用可能なプレゼンテーション専用コンポーネント
+- `lib/services/` — ビジネスロジック、UIコードを含まない
+- `lib/theme/` — デザイントークンとテーマ定義
+- `lib/models/` — データモデルクラス (将来利用予定)
 
-## Git Conventions
+## Git規約
 
-### Branching
-- `main` — Stable, always working
-- `feature/xxx` or `fix/xxx` — Topic branches for development
+### ブランチ戦略
+- `main` — 安定版、常に動作可能な状態を維持
+- `feature/xxx` または `fix/xxx` — トピックブランチで開発
 
-### Commit messages
-Use emoji prefixes:
-- `✨` Feature additions
-- `🐛` Bug fixes
-- `📝` Documentation
-- `🚀` Performance / releases
-- `🎨` Design changes
-- `📖` Documentation overhauls
+### コミットメッセージ
+絵文字プレフィックスを使用:
+- `✨` 機能追加
+- `🐛` バグ修正
+- `📝` ドキュメント
+- `🚀` パフォーマンス / リリース
+- `🎨` デザイン変更
+- `📖` ドキュメント大規模更新
 
-### Secrets check
-Before every commit, verify no `.env`, `gradle.properties`, `key.properties`, or `MapboxSecrets.plist` files are staged.
+### コミット前チェック
+`.env`, `gradle.properties`, `key.properties`, `MapboxSecrets.plist` がステージングされていないことを必ず確認すること。
 
-## Testing
+## テスト
 
-- Framework: `flutter_test` (built-in)
-- Test files: `test/` directory
-- Run: `flutter test`
-- Current coverage is minimal — placeholder test in `test/widget_test.dart`
-- `flutter analyze` for static analysis (run before committing)
+- フレームワーク: `flutter_test` (Flutter組み込み)
+- テストファイル: `test/` ディレクトリ
+- 実行: `flutter test`
+- 現在のカバレッジ: 最小限 — `test/widget_test.dart` にプレースホルダーテストのみ（テンプレートのまま、実際のアプリとは不一致）
+- 静的解析: `flutter analyze` (コミット前に実行すること)
 
-## Documentation
+## ドキュメント一覧
 
-- `README.md` — Project introduction and setup (Japanese)
-- `DEVELOPMENT_RULES.md` — Security and workflow rules (Japanese)
-- `DEBUG_GUIDE.md` — Debugging, hot reload, troubleshooting tips
-- `SUMMARY_PLAN.md` — Implementation plan for AI summary feature
-- `docs/privacy_policy.html` — Privacy policy
+- `README.md` — プロジェクト紹介とセットアップ手順
+- `DEVELOPMENT_RULES.md` — セキュリティ・開発ワークフロー規約
+- `DEBUG_GUIDE.md` — デバッグ、ホットリロード、トラブルシューティング
+- `SUMMARY_PLAN.md` — AIサマリー機能の実装計画
+- `docs/privacy_policy.html` — プライバシーポリシー
 
-## Communication
+## コミュニケーション
 
-- Primary language for documentation and commit messages: **Japanese** (the project owner communicates in Japanese)
-- Code (variables, comments in source) is in **English**
-- When proposing significant technical or design changes, present options and get approval before implementing
+- ドキュメントやコミットメッセージの主要言語: **日本語**
+- ソースコード (変数名、関数名) は **英語**
+- 重大な技術選定やデザイン変更を行う際は、必ずユーザーに提案して承認を得ること
+
+## 既知の課題と改善余地
+
+- `test/widget_test.dart` はFlutterテンプレートのまま (`MyApp` を参照) で実行時にエラーになる
+- `LocationService.dispose()` メソッドがなく、StreamControllerが閉じられない
+- `PhotoMemory` データクラスが `photo_service.dart` 内で定義されており、独立した `models/` ファイルがない
+- `provider` パッケージが依存関係にあるが、実際のコードでは未使用
+- 写真取得が先頭100件のハードコードされた制限で、日付フィルタリング前に実行される
