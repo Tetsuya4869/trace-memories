@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -11,6 +12,7 @@ import '../widgets/summary_dialog.dart';
 import '../services/location_service.dart';
 import '../services/photo_service.dart';
 import '../services/summary_service.dart';
+import '../services/map_route_controller.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -20,12 +22,16 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  MapboxMap? _mapboxMap;
-  PolylineAnnotationManager? _polylineManager;
+  static const double _offScreenMargin = 100;
+  static const double _cardOffsetX = 60;
+  static const double _cardOffsetY = 160;
+
   final LocationService _locationService = LocationService();
   final PhotoService _photoService = PhotoService();
   final SummaryService _summaryService = SummaryService();
-  
+  final MapRouteController _mapController = MapRouteController();
+  StreamSubscription<List<geo.Position>>? _pathSubscription;
+
   double _timelineProgress = 1.0;
   List<geo.Position> _currentPath = [];
   List<PhotoMemory> _photoMemories = [];
@@ -41,18 +47,32 @@ class _MapScreenState extends State<MapScreen> {
     final hasLocPermission = await _locationService.handlePermission();
     if (hasLocPermission) {
       _locationService.startTracking();
-      _locationService.pathStream.listen((path) {
+      _pathSubscription = _locationService.pathStream.listen((path) {
         if (mounted) {
           setState(() => _currentPath = path);
-          _updateRouteLayer();
+          _mapController.updateRouteLayer(_currentPath, _timelineProgress);
         }
       });
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('位置情報の権限が必要です。設定から許可してください。'),
+          duration: Duration(seconds: 4),
+        ),
+      );
     }
 
     final hasPhotoPermission = await _photoService.requestPermission();
     if (hasPhotoPermission) {
       await _loadPhotos();
       _autoZoomToFirstMemory();
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('写真ライブラリへのアクセスを許可すると、思い出を地図に表示できます。'),
+          duration: Duration(seconds: 4),
+        ),
+      );
     }
   }
 
@@ -68,37 +88,16 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _autoZoomToFirstMemory() {
-    if (_photoMemories.isNotEmpty && _mapboxMap != null) {
-      final first = _photoMemories.last;
-      _mapboxMap?.setCamera(CameraOptions(
-        center: Point(coordinates: Position(first.longitude!, first.latitude!)),
-        zoom: 15.0,
-        pitch: 60.0,
-      ));
+    if (_photoMemories.isNotEmpty) {
+      _mapController.zoomToMemory(_photoMemories.last);
     }
   }
 
-  Future<void> _updateRouteLayer() async {
-    if (_mapboxMap == null || _currentPath.isEmpty) return;
-    _polylineManager ??= await _mapboxMap?.annotations.createPolylineAnnotationManager();
-
-    final visibleCount = (_currentPath.length * _timelineProgress).toInt();
-    if (visibleCount < 2) {
-      _polylineManager?.deleteAll();
-      return;
-    }
-
-    final coords = _currentPath.take(visibleCount).map((p) => Position(p.longitude, p.latitude)).toList();
-    _polylineManager?.deleteAll();
-    _polylineManager?.create(PolylineAnnotationOptions(
-      geometry: LineString(coordinates: coords),
-      lineColor: AppTheme.accentBlue.value,
-      lineWidth: 6.0,
-    ));
-  }
-
-  _onMapCreated(MapboxMap mapboxMap) {
-    _mapboxMap = mapboxMap;
+  @override
+  void dispose() {
+    _pathSubscription?.cancel();
+    _locationService.dispose();
+    super.dispose();
   }
 
   void _showSummary() {
@@ -122,24 +121,24 @@ class _MapScreenState extends State<MapScreen> {
           MapWidget(
             key: const ValueKey("mapWidget"),
             styleUri: MapboxStyles.DARK,
-            onMapCreated: _onMapCreated,
+            onMapCreated: _mapController.onMapCreated,
             onCameraChangeListener: (_) => setState(() {}),
           ),
-          
+
           ..._buildPhotoCards(),
-          
+
           _buildAppTitle(),
           _buildTimelineBar(),
           _buildStatusIndicator(),
           _buildSummaryButton(),
-          
+
           if (_isLoadingPhotos)
             const Center(child: CircularProgressIndicator(color: AppTheme.accentBlue)),
         ],
       ),
     );
   }
-  
+
   List<Widget> _buildPhotoCards() {
     final filtered = _photoMemories.where((m) {
       if (_photoMemories.isEmpty) return false;
@@ -149,24 +148,24 @@ class _MapScreenState extends State<MapScreen> {
 
     return filtered.map((photo) {
       return FutureBuilder<ScreenCoordinate?>(
-        future: _mapboxMap?.pixelForCoordinate(Point(coordinates: Position(photo.longitude!, photo.latitude!))),
+        future: _mapController.pixelForMemory(photo),
         builder: (context, snapshot) {
           if (!snapshot.hasData || snapshot.data == null) return const SizedBox.shrink();
           final pos = snapshot.data!;
-          if (pos.x < -100 || pos.x > MediaQuery.of(context).size.width + 100 ||
-              pos.y < -100 || pos.y > MediaQuery.of(context).size.height + 100) {
+          if (pos.x < -_offScreenMargin || pos.x > MediaQuery.of(context).size.width + _offScreenMargin ||
+              pos.y < -_offScreenMargin || pos.y > MediaQuery.of(context).size.height + _offScreenMargin) {
             return const SizedBox.shrink();
           }
 
           return Positioned(
-            left: pos.x - 60,
-            top: pos.y - 160,
+            left: pos.x - _cardOffsetX,
+            top: pos.y - _cardOffsetY,
             child: PhotoCard(
               imageBytes: photo.thumbnail,
               emoji: '📸',
               time: '${photo.dateTime.hour}:${photo.dateTime.minute.toString().padLeft(2, '0')}',
               location: 'この場所で',
-              onTap: () => _focusPhoto(photo),
+              onTap: () => _mapController.flyToMemory(photo),
             ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack).fadeIn(),
           );
         },
@@ -174,17 +173,6 @@ class _MapScreenState extends State<MapScreen> {
     }).toList();
   }
 
-  void _focusPhoto(PhotoMemory photo) {
-    _mapboxMap?.flyTo(
-      CameraOptions(
-        center: Point(coordinates: Position(photo.longitude!, photo.latitude!)),
-        zoom: 17.0,
-        pitch: 60.0,
-      ),
-      MapAnimationOptions(duration: 1000),
-    );
-  }
-  
   Widget _buildAppTitle() {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 20,
@@ -217,7 +205,7 @@ class _MapScreenState extends State<MapScreen> {
         isLive: _timelineProgress > 0.95,
         onProgressChanged: (value) {
           setState(() => _timelineProgress = value);
-          _updateRouteLayer();
+          _mapController.updateRouteLayer(_currentPath, _timelineProgress);
         },
       ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.5, end: 0),
     );

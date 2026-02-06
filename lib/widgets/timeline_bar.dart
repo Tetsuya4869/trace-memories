@@ -31,7 +31,7 @@ class _TimelineBarState extends State<TimelineBar> {
           height: 80,
           padding: const EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
-            color: AppTheme.primaryDark.withOpacity(0.8),
+            color: AppTheme.primaryDark.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppTheme.glassBorder, width: 1),
           ),
@@ -88,7 +88,7 @@ class _TimelineBarState extends State<TimelineBar> {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppTheme.accentBlue.withOpacity(0.5),
+                                  color: AppTheme.accentBlue.withValues(alpha: 0.5),
                                   blurRadius: 10,
                                 ),
                               ],
@@ -106,7 +106,7 @@ class _TimelineBarState extends State<TimelineBar> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppTheme.accentBlue.withOpacity(0.2),
+                    color: AppTheme.accentBlue.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(

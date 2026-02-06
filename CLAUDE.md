@@ -54,11 +54,14 @@ lib/
 │   ├── photo_card.dart       # 写真メモリーカード表示
 │   ├── timeline_bar.dart     # タイムラインスクラバー
 │   └── summary_dialog.dart   # ふりかえりサマリーダイアログ
+├── models/
+│   └── photo_memory.dart     # 写真メモリーデータモデル
 ├── services/
-│   ├── location_service.dart # GPS追跡 (geolocator Streamベース)
-│   ├── photo_service.dart    # 写真ライブラリ連携
-│   ├── summary_service.dart  # テンプレートベースのサマリー生成
-│   └── demo_data.dart        # Webデモ用モックデータ
+│   ├── location_service.dart     # GPS追跡 (geolocator Streamベース)
+│   ├── photo_service.dart        # 写真ライブラリ連携
+│   ├── summary_service.dart      # テンプレートベースのサマリー生成
+│   ├── map_route_controller.dart # 地図ルート描画・カメラ制御
+│   └── demo_data.dart            # Webデモ用モックデータ
 └── theme/
     └── app_theme.dart        # デザインシステム: カラー、グラスモーフィズム、タイポグラフィ
 ```
@@ -171,10 +174,14 @@ Web版デモモードは `.env` なしでも OpenStreetMap タイルにフォー
 - ソースコード (変数名、関数名) は **英語**
 - 重大な技術選定やデザイン変更を行う際は、必ずユーザーに提案して承認を得ること
 
-## 既知の課題と改善余地
+## 改善履歴
 
-- `test/widget_test.dart` はFlutterテンプレートのまま (`MyApp` を参照) で実行時にエラーになる
-- `LocationService.dispose()` メソッドがなく、StreamControllerが閉じられない
-- `PhotoMemory` データクラスが `photo_service.dart` 内で定義されており、独立した `models/` ファイルがない
-- `provider` パッケージが依存関係にあるが、実際のコードでは未使用
-- 写真取得が先頭100件のハードコードされた制限で、日付フィルタリング前に実行される
+以下の課題は全て対応済み（詳細は `TODO.md` 参照）:
+- テストファイルをSummaryService/DemoData/LocationServiceの実テストに書き換え
+- LocationService/MapScreenにdispose処理を追加（リソースリーク修正）
+- PhotoMemoryモデルを `lib/models/` に分離
+- 未使用の `provider` パッケージを削除
+- 写真取得に日付範囲フィルタ（DateTimeCond）を追加し上限500に拡張
+- 地図制御ロジックを `MapRouteController` に抽出
+- マジックナンバーを名前付き定数に置換
+- パーミッション拒否時のSnackBarフィードバックを追加

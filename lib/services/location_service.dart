@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart' as geo;
 
 class LocationService {
+  static const int _distanceFilterMeters = 10;
+
   StreamSubscription<geo.Position>? _positionStreamSubscription;
   final _controller = StreamController<List<geo.Position>>.broadcast();
   
@@ -29,9 +31,9 @@ class LocationService {
   }
 
   void startTracking() {
-    const geo.LocationSettings locationSettings = geo.LocationSettings(
+    final geo.LocationSettings locationSettings = geo.LocationSettings(
       accuracy: geo.LocationAccuracy.high,
-      distanceFilter: 10,
+      distanceFilter: _distanceFilterMeters,
     );
 
     _positionStreamSubscription = geo.Geolocator.getPositionStream(
@@ -50,6 +52,11 @@ class LocationService {
   void clearPath() {
     _path = [];
     _controller.add([]);
+  }
+
+  void dispose() {
+    stopTracking();
+    _controller.close();
   }
   
   List<geo.Position> getMockPath() {
