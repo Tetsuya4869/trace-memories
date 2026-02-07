@@ -1,55 +1,94 @@
-from PIL import Image, ImageDraw
+import math
 import os
+from PIL import Image, ImageDraw
+
 
 def create_base_icon(size=1024):
-    """Create the B1 icon at specified size"""
+    """Simple trace icon: dark circle with a curved route and pin dot."""
     img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    
+
     center = size // 2
     radius = int(size * 0.43)
-    
-    # Gradient circle background
+
+    # Dark gradient circle (primaryDark #0F172A -> secondaryDark #1E293B)
     for r in range(radius, 0, -1):
-        ratio = r / radius
+        t = 1.0 - (r / radius)
         color = (
-            int(99 + (168 - 99) * ratio),
-            int(102 + (85 - 102) * ratio),
-            int(241 + (247 - 241) * ratio),
-            255
+            int(15 + (30 - 15) * t),
+            int(23 + (41 - 23) * t),
+            int(42 + (59 - 42) * t),
+            255,
         )
-        draw.ellipse([center-r, center-r, center+r, center+r], fill=color)
-    
-    # Scale dots to icon size
-    scale = size / 512
-    base_dots = [(180, 150), (320, 180), (380, 280), (280, 350), (150, 300), (200, 220)]
-    dots = [(int(x * scale), int(y * scale)) for x, y in base_dots]
-    
-    dot_color = (255, 255, 255)
-    line_alpha = 150
-    
-    # Connect dots with glowing lines
-    for glow in range(int(8 * scale), 0, -2):
-        for i in range(len(dots)-1):
-            draw.line([dots[i], dots[i+1]], fill=(*dot_color, int(line_alpha/3)), width=int(3*scale)+glow)
-    
-    for i in range(len(dots)-1):
-        draw.line([dots[i], dots[i+1]], fill=(*dot_color, line_alpha), width=max(1, int(3*scale)))
-    
-    # Draw dots with glow
-    dot_radius = max(2, int(10 * scale))
-    glow_radius = max(4, int(20 * scale))
-    
-    for x, y in dots:
-        for g in range(glow_radius, 0, -2):
-            alpha = int(60 - g * 3 / scale) if scale > 0.5 else 30
-            if alpha > 0:
-                draw.ellipse([x-g, y-g, x+g, y+g], fill=(*dot_color, alpha))
-        draw.ellipse([x-dot_radius, y-dot_radius, x+dot_radius, y+dot_radius], fill=(*dot_color, 255))
-    
+        draw.ellipse(
+            [center - r, center - r, center + r, center + r], fill=color
+        )
+
+    s = size / 1024.0  # scale factor
+
+    # --- Draw curved route path using bezier-like segments ---
+    # Route goes from bottom-left to top-right in a smooth S-curve
+    route_points = []
+    steps = 200
+    for i in range(steps + 1):
+        t = i / steps
+        # S-curve using cubic bezier:
+        # P0=(280,700) P1=(200,400) P2=(750,550) P3=(700,280)
+        u = 1 - t
+        x = (u**3 * 280 + 3 * u**2 * t * 200 + 3 * u * t**2 * 750 + t**3 * 700) * s
+        y = (u**3 * 700 + 3 * u**2 * t * 400 + 3 * u * t**2 * 550 + t**3 * 280) * s
+        route_points.append((x, y))
+
+    # Draw route as overlapping circles for smooth anti-aliased result
+    # Glow pass
+    glow_r = int(16 * s)
+    for x, y in route_points[::2]:
+        draw.ellipse([x - glow_r, y - glow_r, x + glow_r, y + glow_r],
+                     fill=(56, 189, 248, 12))
+
+    # Main route (solid circles along path)
+    route_r = int(5 * s)
+    for x, y in route_points:
+        draw.ellipse([x - route_r, y - route_r, x + route_r, y + route_r],
+                     fill=(56, 189, 248, 255))
+
+    # --- Small start dot ---
+    sx, sy = route_points[0]
+    start_r = int(12 * s)
+    draw.ellipse(
+        [sx - start_r, sy - start_r, sx + start_r, sy + start_r],
+        fill=(56, 189, 248, 120),
+    )
+
+    # --- Pin at end of route ---
+    ex, ey = route_points[-1]
+
+    # Pin glow (accentPurple #818CF8)
+    for g in range(int(40 * s), 0, -2):
+        a = max(3, int(40 - g))
+        draw.ellipse(
+            [ex - g, ey - g, ex + g, ey + g], fill=(129, 140, 248, a)
+        )
+
+    # Pin outer circle (purple)
+    pin_r = int(22 * s)
+    draw.ellipse(
+        [ex - pin_r, ey - pin_r, ex + pin_r, ey + pin_r],
+        fill=(129, 140, 248, 255),
+    )
+
+    # Pin inner circle (white)
+    inner_r = int(10 * s)
+    draw.ellipse(
+        [ex - inner_r, ey - inner_r, ex + inner_r, ey + inner_r],
+        fill=(255, 255, 255, 255),
+    )
+
     return img
 
-# iOS icon sizes
+
+# --- Platform sizes ---
+
 ios_sizes = {
     "Icon-App-1024x1024@1x.png": 1024,
     "Icon-App-60x60@3x.png": 180,
@@ -68,7 +107,6 @@ ios_sizes = {
     "Icon-App-20x20@1x.png": 20,
 }
 
-# Android icon sizes
 android_sizes = {
     "mipmap-xxxhdpi": 192,
     "mipmap-xxhdpi": 144,
@@ -77,39 +115,83 @@ android_sizes = {
     "mipmap-mdpi": 48,
 }
 
-# Generate base icon
-print("Generating base icon...")
+macOS_sizes = {
+    "app_icon_16.png": 16,
+    "app_icon_32.png": 32,
+    "app_icon_64.png": 64,
+    "app_icon_128.png": 128,
+    "app_icon_256.png": 256,
+    "app_icon_512.png": 512,
+    "app_icon_1024.png": 1024,
+}
+
+BASE = "/home/user/trace-memories"
+
+print("Generating 1024x1024 base icon...")
 base_icon = create_base_icon(1024)
 
-# iOS
-ios_dir = "C:/Users/joman/develop/trace_memories/ios/Runner/Assets.xcassets/AppIcon.appiconset"
+# Save draft
+draft_dir = f"{BASE}/icon_drafts"
+os.makedirs(draft_dir, exist_ok=True)
+base_icon.save(f"{draft_dir}/simple_trace.png")
+print(f"  Draft saved: icon_drafts/simple_trace.png")
+
+# iOS (no transparency)
+ios_dir = f"{BASE}/ios/Runner/Assets.xcassets/AppIcon.appiconset"
 os.makedirs(ios_dir, exist_ok=True)
-
 print("Generating iOS icons...")
-for filename, size in ios_sizes.items():
-    icon = base_icon.resize((size, size), Image.Resampling.LANCZOS)
-    # iOS needs no transparency, fill with background
-    bg = Image.new('RGB', (size, size), (99, 102, 241))
-    bg.paste(icon, mask=icon.split()[3] if icon.mode == 'RGBA' else None)
+for filename, sz in ios_sizes.items():
+    icon = base_icon.resize((sz, sz), Image.Resampling.LANCZOS)
+    bg = Image.new("RGB", (sz, sz), (15, 23, 42))
+    bg.paste(icon, mask=icon.split()[3])
     bg.save(f"{ios_dir}/{filename}")
-    print(f"  Created: {filename} ({size}x{size})")
+    print(f"  {filename} ({sz}x{sz})")
 
-# Android
-android_base = "C:/Users/joman/develop/trace_memories/android/app/src/main/res"
+# Android (with transparency)
+android_base = f"{BASE}/android/app/src/main/res"
 print("Generating Android icons...")
-for folder, size in android_sizes.items():
+for folder, sz in android_sizes.items():
     folder_path = f"{android_base}/{folder}"
     os.makedirs(folder_path, exist_ok=True)
-    icon = base_icon.resize((size, size), Image.Resampling.LANCZOS)
-    # Save as PNG with transparency
+    icon = base_icon.resize((sz, sz), Image.Resampling.LANCZOS)
     icon.save(f"{folder_path}/ic_launcher.png")
-    # Also save foreground for adaptive icons
     icon.save(f"{folder_path}/ic_launcher_foreground.png")
-    print(f"  Created: {folder}/ic_launcher.png ({size}x{size})")
+    print(f"  {folder}/ic_launcher.png ({sz}x{sz})")
 
-# Play Store icon (512x512)
-playstore_icon = base_icon.resize((512, 512), Image.Resampling.LANCZOS)
-playstore_icon.save("C:/Users/joman/develop/trace_memories/icon_drafts/playstore_icon.png")
-print("  Created: playstore_icon.png (512x512)")
+# macOS
+macos_dir = f"{BASE}/macos/Runner/Assets.xcassets/AppIcon.appiconset"
+os.makedirs(macos_dir, exist_ok=True)
+print("Generating macOS icons...")
+for filename, sz in macOS_sizes.items():
+    icon = base_icon.resize((sz, sz), Image.Resampling.LANCZOS)
+    bg = Image.new("RGB", (sz, sz), (15, 23, 42))
+    bg.paste(icon, mask=icon.split()[3])
+    bg.save(f"{macos_dir}/{filename}")
+    print(f"  {filename} ({sz}x{sz})")
 
-print("\nDone! All icons generated.")
+# Web
+web_dir = f"{BASE}/web"
+icons_dir = f"{web_dir}/icons"
+os.makedirs(icons_dir, exist_ok=True)
+print("Generating Web icons...")
+
+for sz, name in [(16, "favicon.png"), (192, "icons/Icon-192.png"), (512, "icons/Icon-512.png")]:
+    icon = base_icon.resize((sz, sz), Image.Resampling.LANCZOS)
+    bg = Image.new("RGB", (sz, sz), (15, 23, 42))
+    bg.paste(icon, mask=icon.split()[3])
+    bg.save(f"{web_dir}/{name}")
+    print(f"  {name} ({sz}x{sz})")
+
+for sz, name in [(192, "icons/Icon-maskable-192.png"), (512, "icons/Icon-maskable-512.png")]:
+    icon = base_icon.resize((sz, sz), Image.Resampling.LANCZOS)
+    icon.save(f"{web_dir}/{name}")
+    print(f"  {name} ({sz}x{sz})")
+
+# Play Store
+playstore = base_icon.resize((512, 512), Image.Resampling.LANCZOS)
+bg = Image.new("RGB", (512, 512), (15, 23, 42))
+bg.paste(playstore, mask=playstore.split()[3])
+bg.save(f"{draft_dir}/playstore_icon.png")
+print("  playstore_icon.png (512x512)")
+
+print("\nDone!")
