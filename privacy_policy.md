@@ -28,14 +28,9 @@ TraceMemories（以下「本アプリ」）は、ユーザーのプライバシ�
 地図表示のためにMapbox社のサービスを利用しています。
 - Mapboxのプライバシーポリシー: https://www.mapbox.com/legal/privacy
 
-### Google AdMob（広告）
-広告配信のためにGoogle AdMobを利用する場合があります。
-- Googleのプライバシーポリシー: https://policies.google.com/privacy
-
 ## データの保存
 
 - すべてのユーザーデータは、ユーザーの端末内にローカル保存されます
-- クラウド同期機能を使用する場合、データは暗号化されて保存されます
 - ユーザーはいつでもアプリ内のデータを削除できます
 
 ## お子様のプライバシー
@@ -49,7 +44,7 @@ TraceMemories（以下「本アプリ」）は、ユーザーのプライバシ�
 ## お問い合わせ
 
 プライバシーに関するご質問は、以下までご連絡ください：
-- Email: [your-email@example.com]
+- Email: support@tracememories.app
 
 ---
 
@@ -81,14 +76,9 @@ The App accesses your photo library to display memories on the map.
 We use Mapbox for map display.
 - Mapbox Privacy Policy: https://www.mapbox.com/legal/privacy
 
-### Google AdMob
-We may use Google AdMob for advertising.
-- Google Privacy Policy: https://policies.google.com/privacy
-
 ## Data Storage
 
 - All user data is stored locally on your device
-- If cloud sync is enabled, data is encrypted
 - You can delete your data at any time within the app
 
 ## Children's Privacy
@@ -102,4 +92,4 @@ This Privacy Policy may be updated without notice. Changes will be posted on thi
 ## Contact Us
 
 For privacy-related questions:
-- Email: [your-email@example.com]
+- Email: support@tracememories.app
