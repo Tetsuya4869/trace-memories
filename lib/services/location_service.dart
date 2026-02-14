@@ -46,6 +46,11 @@ class LocationService {
     _positionStreamSubscription?.cancel();
     _positionStreamSubscription = null;
   }
+
+  void dispose() {
+    stopTracking();
+    _controller.close();
+  }
   
   void clearPath() {
     _path = [];
