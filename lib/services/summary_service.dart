@@ -24,7 +24,7 @@ class SummaryService {
     }
 
     if (photoCount > 0) {
-      summary += "\n\nその道の途中で、${photoCount}つの瞬間を永遠に閉じ込めました。";
+      summary += "\n\nその道の途中で、$photoCountつの瞬間を永遠に閉じ込めました。";
       if (photoCount == 1) {
         summary += "\n\n${_getTimeOfDay(photos.first.dateTime)}、ふと立ち止まってシャッターを切った——きっと、心が動いた瞬間があったのでしょう。";
       } else {

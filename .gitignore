@@ -1,9 +1,97 @@
-# Miscellaneous
+# ===========================
+# Flutter / Dart / Pub
+# ===========================
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+pubspec.lock
+
+# Symbolication
+app.*.symbols
+
+# Obfuscation
+app.*.map.json
+
+# ===========================
+# iOS / Xcode
+# ===========================
+**/ios/Pods/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/build/
+*.xcuserstate
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# ===========================
+# macOS / Xcode
+# ===========================
+**/macos/Pods/
+**/macos/Flutter/ephemeral/
+**/macos/build/
+
+# ===========================
+# Android
+# ===========================
+/android/app/debug
+/android/app/profile
+/android/app/release
+**/android/.gradle/
+**/android/captures/
+**/android/local.properties
+**/android/key.properties
+android/gradle.properties
+
+# ===========================
+# Node.js / Next.js (trace-memories-web)
+# ===========================
+trace-memories-web/node_modules/
+trace-memories-web/.next/
+trace-memories-web/out/
+trace-memories-web/build/
+trace-memories-web/.pnp
+trace-memories-web/.pnp.js
+trace-memories-web/npm-debug.log*
+trace-memories-web/yarn-debug.log*
+trace-memories-web/yarn-error.log*
+trace-memories-web/.env.local
+trace-memories-web/.env*.local
+trace-memories-web/.vercel
+trace-memories-web/next-env.d.ts
+trace-memories-web/*.tsbuildinfo
+
+# ===========================
+# Secrets
+# ===========================
+.env
+.env.*
+!.env.*.example
+ios/Runner/MapboxSecrets.plist
+android/key.properties
+**/google-services.json
+**/GoogleService-Info.plist
+
+# ===========================
+# OS / Editors
+# ===========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
 *.class
 *.log
 *.pyc
 *.swp
-.DS_Store
 .atom/
 .build/
 .buildlog/
@@ -12,37 +100,8 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# IntelliJ / Android Studio
 *.iml
 *.ipr
 *.iws
 .idea/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# Secrets
-.env
-.env.*
-android/gradle.properties
-android/local.properties
-android/key.properties
-ios/Runner/MapboxSecrets.plist
