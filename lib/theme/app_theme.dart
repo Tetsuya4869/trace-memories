@@ -15,6 +15,8 @@ class AppTheme {
   static const Color glassBackground = Color(0x1AFFFFFF);
   static const Color glassBorder = Color(0x33FFFFFF);
   static const double glassBlur = 12.0;
+  static const double glassBlurStrong = 16.0;  // timeline bar / elevated panels
+  static const double glassBlurScrim = 10.0;   // dialog backdrop scrim
   
   // Gradients
   static const LinearGradient routeGradient = LinearGradient(
