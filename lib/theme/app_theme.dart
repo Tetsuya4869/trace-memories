@@ -15,10 +15,18 @@ class AppTheme {
   static const Color glassBackground = Color(0x1AFFFFFF);
   static const Color glassBorder = Color(0x33FFFFFF);
   static const double glassBlur = 12.0;
+  static const double glassBlurStrong = 16.0;  // timeline bar / elevated panels
+  static const double glassBlurScrim = 10.0;   // dialog backdrop scrim
   
   // Gradients
   static const LinearGradient routeGradient = LinearGradient(
     colors: [accentBlue, accentPurple],
+  );
+
+  static const LinearGradient glassGradient = LinearGradient(
+    colors: [Color(0x1AFFFFFF), Color(0x0DFFFFFF)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
   );
   
   static const RadialGradient backgroundGradient = RadialGradient(
@@ -68,7 +76,7 @@ class AppTheme {
       border: Border.all(color: glassBorder, width: 1),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.3),
+          color: Colors.black.withValues(alpha: 0.3),
           blurRadius: 32,
           offset: const Offset(0, 8),
         ),

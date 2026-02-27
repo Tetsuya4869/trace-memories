@@ -36,15 +36,26 @@ class LocationService {
 
     _positionStreamSubscription = geo.Geolocator.getPositionStream(
       locationSettings: locationSettings,
-    ).listen((geo.Position position) {
-      _path.add(position);
-      _controller.add(List.from(_path));
-    });
+    ).listen(
+      (geo.Position position) {
+        _path.add(position);
+        _controller.add(List.from(_path));
+      },
+      onError: (Object error) {
+        _controller.addError(error);
+      },
+      cancelOnError: false,
+    );
   }
 
   void stopTracking() {
     _positionStreamSubscription?.cancel();
     _positionStreamSubscription = null;
+  }
+
+  void dispose() {
+    stopTracking();
+    _controller.close();
   }
   
   void clearPath() {
@@ -52,11 +63,4 @@ class LocationService {
     _controller.add([]);
   }
   
-  List<geo.Position> getMockPath() {
-    return [
-      geo.Position(longitude: 138.7278, latitude: 35.3606, timestamp: DateTime.now(), accuracy: 0, altitude: 0, heading: 0, speed: 0, speedAccuracy: 0, altitudeAccuracy: 0, headingAccuracy: 0),
-      geo.Position(longitude: 138.7350, latitude: 35.3700, timestamp: DateTime.now(), accuracy: 0, altitude: 0, heading: 0, speed: 0, speedAccuracy: 0, altitudeAccuracy: 0, headingAccuracy: 0),
-      geo.Position(longitude: 138.7450, latitude: 35.3650, timestamp: DateTime.now(), accuracy: 0, altitude: 0, heading: 0, speed: 0, speedAccuracy: 0, altitudeAccuracy: 0, headingAccuracy: 0),
-    ];
-  }
 }
