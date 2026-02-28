@@ -22,6 +22,7 @@ class PhotoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bytes = imageBytes;
     return GestureDetector(
       onTap: onTap,
       child: MouseRegion(
@@ -46,11 +47,11 @@ class PhotoCard extends StatelessWidget {
                         color: AppTheme.surfaceDark,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: imageBytes != null
+                      child: bytes != null
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.memory(
-                                imageBytes!,
+                                bytes,
                                 fit: BoxFit.cover,
                               ),
                             )

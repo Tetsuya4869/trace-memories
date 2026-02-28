@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -11,6 +12,7 @@ import '../widgets/summary_dialog.dart';
 import '../services/location_service.dart';
 import '../services/photo_service.dart';
 import '../services/summary_service.dart';
+import 'settings_screen.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -25,56 +27,82 @@ class _MapScreenState extends State<MapScreen> {
   final LocationService _locationService = LocationService();
   final PhotoService _photoService = PhotoService();
   final SummaryService _summaryService = SummaryService();
-  
+
+  StreamSubscription<List<geo.Position>>? _pathSubscription;
+
   double _timelineProgress = 1.0;
   List<geo.Position> _currentPath = [];
   List<PhotoMemory> _photoMemories = [];
   bool _isLoadingPhotos = false;
+  bool _hasLocationPermission = true;
+  bool _hasPhotoPermission = true;
+
+  Timer? _cameraDebounce;
 
   @override
   void initState() {
     super.initState();
+    MapboxOptions.setAccessToken(dotenv.env['MAPBOX_PUBLIC_TOKEN'] ?? '');
     _initServices();
+  }
+
+  @override
+  void dispose() {
+    _cameraDebounce?.cancel();
+    _pathSubscription?.cancel();
+    _locationService.dispose();
+    super.dispose();
   }
 
   Future<void> _initServices() async {
     final hasLocPermission = await _locationService.handlePermission();
+    if (!mounted) return;
     if (hasLocPermission) {
       _locationService.startTracking();
-      _locationService.pathStream.listen((path) {
+      _pathSubscription = _locationService.pathStream.listen((path) {
         if (mounted) {
           setState(() => _currentPath = path);
           _updateRouteLayer();
         }
       });
+    } else {
+      setState(() => _hasLocationPermission = false);
     }
 
     final hasPhotoPermission = await _photoService.requestPermission();
+    if (!mounted) return;
     if (hasPhotoPermission) {
       await _loadPhotos();
+      if (!mounted) return;
       _autoZoomToFirstMemory();
+    } else {
+      setState(() => _hasPhotoPermission = false);
     }
   }
 
   Future<void> _loadPhotos() async {
+    if (!mounted) return;
     setState(() => _isLoadingPhotos = true);
     final memories = await _photoService.getMemoriesForDate(DateTime.now());
-    if (mounted) {
-      setState(() {
-        _photoMemories = memories;
-        _isLoadingPhotos = false;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _photoMemories = memories;
+      _isLoadingPhotos = false;
+    });
   }
 
   void _autoZoomToFirstMemory() {
     if (_photoMemories.isNotEmpty && _mapboxMap != null) {
       final first = _photoMemories.last;
-      _mapboxMap?.setCamera(CameraOptions(
-        center: Point(coordinates: Position(first.longitude!, first.latitude!)),
-        zoom: 15.0,
-        pitch: 60.0,
-      ));
+      final lat = first.latitude;
+      final lng = first.longitude;
+      if (lat != null && lng != null) {
+        _mapboxMap?.setCamera(CameraOptions(
+          center: Point(coordinates: Position(lng, lat)),
+          zoom: 15.0,
+          pitch: 60.0,
+        ));
+      }
     }
   }
 
@@ -92,12 +120,12 @@ class _MapScreenState extends State<MapScreen> {
     _polylineManager?.deleteAll();
     _polylineManager?.create(PolylineAnnotationOptions(
       geometry: LineString(coordinates: coords),
-      lineColor: AppTheme.accentBlue.value,
+      lineColor: AppTheme.accentBlue.toARGB32(),
       lineWidth: 6.0,
     ));
   }
 
-  _onMapCreated(MapboxMap mapboxMap) {
+  void _onMapCreated(MapboxMap mapboxMap) {
     _mapboxMap = mapboxMap;
   }
 
@@ -114,8 +142,6 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    MapboxOptions.setAccessToken(dotenv.env['MAPBOX_PUBLIC_TOKEN'] ?? "");
-
     return Scaffold(
       body: Stack(
         children: [
@@ -123,33 +149,73 @@ class _MapScreenState extends State<MapScreen> {
             key: const ValueKey("mapWidget"),
             styleUri: MapboxStyles.DARK,
             onMapCreated: _onMapCreated,
-            onCameraChangeListener: (_) => setState(() {}),
+            onCameraChangeListener: (_) {
+              _cameraDebounce?.cancel();
+              _cameraDebounce = Timer(const Duration(milliseconds: 100), () {
+                if (mounted) setState(() {});
+              });
+            },
           ),
-          
+
           ..._buildPhotoCards(),
-          
+
           _buildAppTitle(),
           _buildTimelineBar(),
           _buildStatusIndicator(),
           _buildSummaryButton(),
-          
+          _buildSettingsButton(),
+
+          if (!_hasLocationPermission || !_hasPhotoPermission)
+            _buildPermissionBanner(),
+
           if (_isLoadingPhotos)
             const Center(child: CircularProgressIndicator(color: AppTheme.accentBlue)),
         ],
       ),
     );
   }
-  
+
+  Widget _buildPermissionBanner() {
+    final messages = <String>[];
+    if (!_hasLocationPermission) messages.add('位置情報');
+    if (!_hasPhotoPermission) messages.add('写真');
+
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 70,
+      left: 20,
+      right: 20,
+      child: GlassContainer(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        borderRadius: BorderRadius.circular(16),
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline, color: Colors.amber, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '${messages.join("・")}へのアクセスが許可されていません。設定アプリから許可してください。',
+                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+              ),
+            ),
+          ],
+        ),
+      ).animate().fadeIn(delay: 500.ms).slideY(begin: -0.3, end: 0),
+    );
+  }
+
   List<Widget> _buildPhotoCards() {
-    final filtered = _photoMemories.where((m) {
-      if (_photoMemories.isEmpty) return false;
-      final idx = _photoMemories.indexOf(m);
-      return (idx / _photoMemories.length) <= _timelineProgress;
-    }).toList();
+    if (_photoMemories.isEmpty) return [];
+    final visibleCount = (_photoMemories.length * _timelineProgress).ceil();
+    final filtered = _photoMemories.take(visibleCount).toList();
 
     return filtered.map((photo) {
+      final lat = photo.latitude;
+      final lng = photo.longitude;
+      if (lat == null || lng == null) {
+        return const SizedBox.shrink();
+      }
       return FutureBuilder<ScreenCoordinate?>(
-        future: _mapboxMap?.pixelForCoordinate(Point(coordinates: Position(photo.longitude!, photo.latitude!))),
+        future: _mapboxMap?.pixelForCoordinate(Point(coordinates: Position(lng, lat))),
         builder: (context, snapshot) {
           if (!snapshot.hasData || snapshot.data == null) return const SizedBox.shrink();
           final pos = snapshot.data!;
@@ -175,16 +241,19 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _focusPhoto(PhotoMemory photo) {
+    final lat = photo.latitude;
+    final lng = photo.longitude;
+    if (lat == null || lng == null) return;
     _mapboxMap?.flyTo(
       CameraOptions(
-        center: Point(coordinates: Position(photo.longitude!, photo.latitude!)),
+        center: Point(coordinates: Position(lng, lat)),
         zoom: 17.0,
         pitch: 60.0,
       ),
       MapAnimationOptions(duration: 1000),
     );
   }
-  
+
   Widget _buildAppTitle() {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 20,
@@ -226,7 +295,7 @@ class _MapScreenState extends State<MapScreen> {
   Widget _buildStatusIndicator() {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 25,
-      right: 20,
+      right: 60,
       child: GlassContainer(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         borderRadius: BorderRadius.circular(30),
@@ -254,5 +323,23 @@ class _MapScreenState extends State<MapScreen> {
         child: const Icon(Icons.history_edu, color: AppTheme.primaryDark),
       ).animate().scale(delay: 1000.ms),
     );
+  }
+
+  Widget _buildSettingsButton() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 20,
+      right: 20,
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SettingsScreen()),
+        ),
+        child: GlassContainer(
+          padding: const EdgeInsets.all(8),
+          borderRadius: BorderRadius.circular(30),
+          child: const Icon(Icons.settings, size: 18, color: AppTheme.textSecondary),
+        ),
+      ),
+    ).animate().fadeIn(delay: 800.ms);
   }
 }

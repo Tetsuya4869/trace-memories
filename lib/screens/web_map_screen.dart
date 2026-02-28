@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 import 'package:geolocator/geolocator.dart' as geo;
+import 'settings_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/timeline_bar.dart';
@@ -34,6 +35,12 @@ class _WebMapScreenState extends State<WebMapScreen> {
     _demoPhotos = DemoData.samplePhotos;
   }
 
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
   void _showSummary() {
     final summary = _summaryService.generateSummary(
       path: _demoPath,
@@ -55,10 +62,9 @@ class _WebMapScreenState extends State<WebMapScreen> {
   }
 
   List<DemoPhotoMemory> _getVisiblePhotos() {
-    return _demoPhotos.where((photo) {
-      final idx = _demoPhotos.indexOf(photo);
-      return (idx / _demoPhotos.length) <= _timelineProgress;
-    }).toList();
+    if (_demoPhotos.isEmpty) return [];
+    final visibleCount = (_demoPhotos.length * _timelineProgress).ceil();
+    return _demoPhotos.take(visibleCount).toList();
   }
 
   @override
@@ -126,6 +132,9 @@ class _WebMapScreenState extends State<WebMapScreen> {
 
           // サマリーボタン
           _buildSummaryButton(),
+
+          // 設定ボタン
+          _buildSettingsButton(),
         ],
       ),
     );
@@ -266,7 +275,7 @@ class _WebMapScreenState extends State<WebMapScreen> {
   Widget _buildStatusIndicator(int photoCount) {
     return Positioned(
       top: MediaQuery.of(context).padding.top + 25,
-      right: 20,
+      right: 60,
       child: GlassContainer(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         borderRadius: BorderRadius.circular(30),
@@ -314,6 +323,24 @@ class _WebMapScreenState extends State<WebMapScreen> {
         child: const Icon(Icons.history_edu, color: AppTheme.primaryDark),
       ).animate().scale(delay: 1000.ms),
     );
+  }
+
+  Widget _buildSettingsButton() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 20,
+      right: 20,
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SettingsScreen()),
+        ),
+        child: GlassContainer(
+          padding: const EdgeInsets.all(8),
+          borderRadius: BorderRadius.circular(30),
+          child: const Icon(Icons.settings, size: 18, color: AppTheme.textSecondary),
+        ),
+      ),
+    ).animate().fadeIn(delay: 800.ms);
   }
 }
 
