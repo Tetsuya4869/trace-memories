@@ -16,6 +16,23 @@
 - [x] ユニットテスト（SummaryService, 距離計算: 5件）
 - [x] flutter analyze エラー0件
 - [x] flutter test 全件パス
+- [x] build() 内副作用を initState() に移動（MapboxOptions.setAccessToken）
+- [x] async gap 後の mounted チェック追加（_initServices / _loadPhotos）
+- [x] PhotoService に try-catch エラーハンドリング追加
+- [x] LocationService の listen に onError ハンドラ追加
+- [x] カメラ変更リスナーに debounce 導入
+- [x] ゼロ除算リスク修正 + O(n^2) アルゴリズム改善
+- [x] 強制アンラップ (!) をローカル変数バインドに置換
+- [x] WebMapScreen に MapController.dispose() 追加
+- [x] デッドコード削除（getMockPath）
+
+## コード品質（継続的改善）
+
+- [ ] FutureBuilder の future をキャッシュ（毎 build で新しい Future を生成しない）
+- [ ] broadcast StreamController の設計見直し（シングルサブスクリプションへの変更検討）
+- [ ] テストカバレッジ拡充（LocationService, PhotoService, TimelineBar, WebMapScreen）
+- [ ] _autoZoomToFirstMemory のレースコンディション対策（地図初期化完了待ち）
+- [ ] 未使用パッケージの整理（provider, path_provider, sqflite — 使用時まで削除検討）
 
 ## データ永続化（リリース前に必須）
 

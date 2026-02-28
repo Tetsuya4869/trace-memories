@@ -35,6 +35,12 @@ class _WebMapScreenState extends State<WebMapScreen> {
     _demoPhotos = DemoData.samplePhotos;
   }
 
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
   void _showSummary() {
     final summary = _summaryService.generateSummary(
       path: _demoPath,
@@ -56,10 +62,9 @@ class _WebMapScreenState extends State<WebMapScreen> {
   }
 
   List<DemoPhotoMemory> _getVisiblePhotos() {
-    return _demoPhotos.where((photo) {
-      final idx = _demoPhotos.indexOf(photo);
-      return (idx / _demoPhotos.length) <= _timelineProgress;
-    }).toList();
+    if (_demoPhotos.isEmpty) return [];
+    final visibleCount = (_demoPhotos.length * _timelineProgress).ceil();
+    return _demoPhotos.take(visibleCount).toList();
   }
 
   @override

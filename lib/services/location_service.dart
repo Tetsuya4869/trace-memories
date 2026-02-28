@@ -36,10 +36,15 @@ class LocationService {
 
     _positionStreamSubscription = geo.Geolocator.getPositionStream(
       locationSettings: locationSettings,
-    ).listen((geo.Position position) {
-      _path.add(position);
-      _controller.add(List.from(_path));
-    });
+    ).listen(
+      (geo.Position position) {
+        _path.add(position);
+        _controller.add(List.from(_path));
+      },
+      onError: (error) {
+        // GPS disabled or location service interrupted — ignore gracefully
+      },
+    );
   }
 
   void stopTracking() {
@@ -55,13 +60,5 @@ class LocationService {
   void clearPath() {
     _path = [];
     _controller.add([]);
-  }
-  
-  List<geo.Position> getMockPath() {
-    return [
-      geo.Position(longitude: 138.7278, latitude: 35.3606, timestamp: DateTime.now(), accuracy: 0, altitude: 0, heading: 0, speed: 0, speedAccuracy: 0, altitudeAccuracy: 0, headingAccuracy: 0),
-      geo.Position(longitude: 138.7350, latitude: 35.3700, timestamp: DateTime.now(), accuracy: 0, altitude: 0, heading: 0, speed: 0, speedAccuracy: 0, altitudeAccuracy: 0, headingAccuracy: 0),
-      geo.Position(longitude: 138.7450, latitude: 35.3650, timestamp: DateTime.now(), accuracy: 0, altitude: 0, heading: 0, speed: 0, speedAccuracy: 0, altitudeAccuracy: 0, headingAccuracy: 0),
-    ];
   }
 }

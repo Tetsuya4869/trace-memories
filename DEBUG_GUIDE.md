@@ -36,7 +36,7 @@ flutter pub get
 実機を持って外に出なくてもデバッグ可能です。
 - **Android**: `Location Settings` > `Mock location app` でGPSシミュレーターを使用。
 - **iOS**: Simulatorの `Features` > `Location` > `City Run` などを選択。
-- **コード側**: `LocationService` に用意した `getMockPath()` を使って擬似的な軌跡を描画できます。
+- **Web**: デモモードが自動的に使用され、`DemoData.samplePath` のサンプル軌跡が表示されます。
 
 ---
 

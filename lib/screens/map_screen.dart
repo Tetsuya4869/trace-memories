@@ -37,14 +37,18 @@ class _MapScreenState extends State<MapScreen> {
   bool _hasLocationPermission = true;
   bool _hasPhotoPermission = true;
 
+  Timer? _cameraDebounce;
+
   @override
   void initState() {
     super.initState();
+    MapboxOptions.setAccessToken(dotenv.env['MAPBOX_PUBLIC_TOKEN'] ?? '');
     _initServices();
   }
 
   @override
   void dispose() {
+    _cameraDebounce?.cancel();
     _pathSubscription?.cancel();
     _locationService.dispose();
     super.dispose();
@@ -52,6 +56,7 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _initServices() async {
     final hasLocPermission = await _locationService.handlePermission();
+    if (!mounted) return;
     if (hasLocPermission) {
       _locationService.startTracking();
       _pathSubscription = _locationService.pathStream.listen((path) {
@@ -61,35 +66,39 @@ class _MapScreenState extends State<MapScreen> {
         }
       });
     } else {
-      if (mounted) setState(() => _hasLocationPermission = false);
+      setState(() => _hasLocationPermission = false);
     }
 
     final hasPhotoPermission = await _photoService.requestPermission();
+    if (!mounted) return;
     if (hasPhotoPermission) {
       await _loadPhotos();
+      if (!mounted) return;
       _autoZoomToFirstMemory();
     } else {
-      if (mounted) setState(() => _hasPhotoPermission = false);
+      setState(() => _hasPhotoPermission = false);
     }
   }
 
   Future<void> _loadPhotos() async {
+    if (!mounted) return;
     setState(() => _isLoadingPhotos = true);
     final memories = await _photoService.getMemoriesForDate(DateTime.now());
-    if (mounted) {
-      setState(() {
-        _photoMemories = memories;
-        _isLoadingPhotos = false;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _photoMemories = memories;
+      _isLoadingPhotos = false;
+    });
   }
 
   void _autoZoomToFirstMemory() {
     if (_photoMemories.isNotEmpty && _mapboxMap != null) {
       final first = _photoMemories.last;
-      if (first.latitude != null && first.longitude != null) {
+      final lat = first.latitude;
+      final lng = first.longitude;
+      if (lat != null && lng != null) {
         _mapboxMap?.setCamera(CameraOptions(
-          center: Point(coordinates: Position(first.longitude!, first.latitude!)),
+          center: Point(coordinates: Position(lng, lat)),
           zoom: 15.0,
           pitch: 60.0,
         ));
@@ -133,8 +142,6 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    MapboxOptions.setAccessToken(dotenv.env['MAPBOX_PUBLIC_TOKEN'] ?? "");
-
     return Scaffold(
       body: Stack(
         children: [
@@ -142,7 +149,12 @@ class _MapScreenState extends State<MapScreen> {
             key: const ValueKey("mapWidget"),
             styleUri: MapboxStyles.DARK,
             onMapCreated: _onMapCreated,
-            onCameraChangeListener: (_) => setState(() {}),
+            onCameraChangeListener: (_) {
+              _cameraDebounce?.cancel();
+              _cameraDebounce = Timer(const Duration(milliseconds: 100), () {
+                if (mounted) setState(() {});
+              });
+            },
           ),
 
           ..._buildPhotoCards(),
@@ -192,18 +204,18 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   List<Widget> _buildPhotoCards() {
-    final filtered = _photoMemories.where((m) {
-      if (_photoMemories.isEmpty) return false;
-      final idx = _photoMemories.indexOf(m);
-      return (idx / _photoMemories.length) <= _timelineProgress;
-    }).toList();
+    if (_photoMemories.isEmpty) return [];
+    final visibleCount = (_photoMemories.length * _timelineProgress).ceil();
+    final filtered = _photoMemories.take(visibleCount).toList();
 
     return filtered.map((photo) {
-      if (photo.latitude == null || photo.longitude == null) {
+      final lat = photo.latitude;
+      final lng = photo.longitude;
+      if (lat == null || lng == null) {
         return const SizedBox.shrink();
       }
       return FutureBuilder<ScreenCoordinate?>(
-        future: _mapboxMap?.pixelForCoordinate(Point(coordinates: Position(photo.longitude!, photo.latitude!))),
+        future: _mapboxMap?.pixelForCoordinate(Point(coordinates: Position(lng, lat))),
         builder: (context, snapshot) {
           if (!snapshot.hasData || snapshot.data == null) return const SizedBox.shrink();
           final pos = snapshot.data!;
@@ -229,10 +241,12 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _focusPhoto(PhotoMemory photo) {
-    if (photo.latitude == null || photo.longitude == null) return;
+    final lat = photo.latitude;
+    final lng = photo.longitude;
+    if (lat == null || lng == null) return;
     _mapboxMap?.flyTo(
       CameraOptions(
-        center: Point(coordinates: Position(photo.longitude!, photo.latitude!)),
+        center: Point(coordinates: Position(lng, lat)),
         zoom: 17.0,
         pitch: 60.0,
       ),

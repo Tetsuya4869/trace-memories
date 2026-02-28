@@ -26,48 +26,58 @@ class PhotoService {
   }
 
   Future<List<PhotoMemory>> getMemoriesForDate(DateTime date) async {
-    final List<AssetPathEntity> paths = await PhotoManager.getAssetPathList(
-      type: RequestType.image,
-      filterOption: FilterOptionGroup(
-        orders: [
-          const OrderOption(type: OrderOptionType.createDate, asc: false),
-        ],
-      ),
-    );
+    try {
+      final List<AssetPathEntity> paths = await PhotoManager.getAssetPathList(
+        type: RequestType.image,
+        filterOption: FilterOptionGroup(
+          orders: [
+            const OrderOption(type: OrderOptionType.createDate, asc: false),
+          ],
+        ),
+      );
 
-    if (paths.isEmpty) return [];
+      if (paths.isEmpty) return [];
 
-    final List<AssetEntity> entities = await paths[0].getAssetListRange(
-      start: 0,
-      end: 100,
-    );
+      final List<AssetEntity> entities = await paths[0].getAssetListRange(
+        start: 0,
+        end: 100,
+      );
 
-    List<PhotoMemory> memories = [];
-    
-    for (var entity in entities) {
-      if (entity.createDateTime.year == date.year &&
-          entity.createDateTime.month == date.month &&
-          entity.createDateTime.day == date.day) {
-        
-        final latlng = await entity.latlngAsync();
-        
-        if (latlng != null && latlng.latitude != 0 && latlng.longitude != 0) {
-          final thumbnail = await entity.thumbnailDataWithSize(
-            const ThumbnailSize(200, 200),
-          );
-          
-          memories.add(PhotoMemory(
-            id: entity.id,
-            entity: entity,
-            latitude: latlng.latitude,
-            longitude: latlng.longitude,
-            dateTime: entity.createDateTime,
-            thumbnail: thumbnail,
-          ));
+      List<PhotoMemory> memories = [];
+
+      for (var entity in entities) {
+        if (entity.createDateTime.year == date.year &&
+            entity.createDateTime.month == date.month &&
+            entity.createDateTime.day == date.day) {
+          try {
+            final latlng = await entity.latlngAsync();
+
+            if (latlng != null &&
+                latlng.latitude != 0 &&
+                latlng.longitude != 0) {
+              final thumbnail = await entity.thumbnailDataWithSize(
+                const ThumbnailSize(200, 200),
+              );
+
+              memories.add(PhotoMemory(
+                id: entity.id,
+                entity: entity,
+                latitude: latlng.latitude,
+                longitude: latlng.longitude,
+                dateTime: entity.createDateTime,
+                thumbnail: thumbnail,
+              ));
+            }
+          } catch (_) {
+            // Skip individual photo on error (deleted, inaccessible, etc.)
+            continue;
+          }
         }
       }
+
+      return memories;
+    } catch (_) {
+      return [];
     }
-    
-    return memories;
   }
 }
