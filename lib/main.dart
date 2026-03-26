@@ -5,20 +5,16 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'theme/app_theme.dart';
 import 'screens/map_screen.dart';
 import 'screens/web_map_screen.dart';
+import 'screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables (skip on web if .env not available)
-  if (!kIsWeb) {
+  // Load environment variables
+  try {
     await dotenv.load(fileName: ".env");
-  } else {
-    // Web版では.envを使わない（デモモード）
-    try {
-      await dotenv.load(fileName: ".env");
-    } catch (_) {
-      // .env がなくても続行（Web版はデモモード）
-    }
+  } catch (_) {
+    // .env がなくても続行（Web版はデモモード、ネイティブ版はトークン未設定状態）
   }
 
   // Set system UI overlay style for immersive experience (native only)
@@ -30,7 +26,6 @@ void main() async {
       systemNavigationBarIconBrightness: Brightness.light,
     ));
 
-    // Enable edge-to-edge
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
 
@@ -46,8 +41,31 @@ class TraceMemoriesApp extends StatelessWidget {
       title: 'TraceMemories',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      // Web版ではデモモードのWebMapScreen、それ以外ではMapScreen
-      home: kIsWeb ? const WebMapScreen() : const MapScreen(),
+      home: kIsWeb ? const WebMapScreen() : const OnboardingGate(),
     );
+  }
+}
+
+/// 初回起動時はオンボーディング、2回目以降はMapScreenを表示
+class OnboardingGate extends StatefulWidget {
+  const OnboardingGate({super.key});
+
+  @override
+  State<OnboardingGate> createState() => _OnboardingGateState();
+}
+
+class _OnboardingGateState extends State<OnboardingGate> {
+  bool _showOnboarding = true;
+
+  void _completeOnboarding() {
+    setState(() => _showOnboarding = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showOnboarding) {
+      return OnboardingScreen(onComplete: _completeOnboarding);
+    }
+    return const MapScreen();
   }
 }
