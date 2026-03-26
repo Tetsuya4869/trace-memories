@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-class TimelineBar extends StatefulWidget {
+class TimelineBar extends StatelessWidget {
   final DateTime selectedDate;
   final double progress; // 0.0 to 1.0
   final ValueChanged<double>? onProgressChanged;
@@ -17,16 +17,11 @@ class TimelineBar extends StatefulWidget {
   });
 
   @override
-  State<TimelineBar> createState() => _TimelineBarState();
-}
-
-class _TimelineBarState extends State<TimelineBar> {
-  @override
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        filter: ImageFilter.blur(sigmaX: AppTheme.glassBlurStrong, sigmaY: AppTheme.glassBlurStrong),
         child: Container(
           height: 80,
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -39,7 +34,7 @@ class _TimelineBarState extends State<TimelineBar> {
             children: [
               // Date display
               Text(
-                _formatDate(widget.selectedDate),
+                _formatDate(selectedDate),
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -52,15 +47,15 @@ class _TimelineBarState extends State<TimelineBar> {
                   builder: (context, constraints) {
                     return GestureDetector(
                       onHorizontalDragUpdate: (details) {
-                        if (widget.onProgressChanged != null) {
+                        if (onProgressChanged != null) {
                           final newProgress = details.localPosition.dx / constraints.maxWidth;
-                          widget.onProgressChanged!(newProgress.clamp(0.0, 1.0));
+                          onProgressChanged!(newProgress.clamp(0.0, 1.0));
                         }
                       },
                       onTapDown: (details) {
-                        if (widget.onProgressChanged != null) {
+                        if (onProgressChanged != null) {
                           final newProgress = details.localPosition.dx / constraints.maxWidth;
-                          widget.onProgressChanged!(newProgress.clamp(0.0, 1.0));
+                          onProgressChanged!(newProgress.clamp(0.0, 1.0));
                         }
                       },
                       child: Container(
@@ -78,7 +73,7 @@ class _TimelineBarState extends State<TimelineBar> {
                             children: [
                               // Progress fill
                               FractionallySizedBox(
-                                widthFactor: widget.progress,
+                                widthFactor: progress,
                                 child: Container(
                                   decoration: BoxDecoration(
                                     gradient: AppTheme.routeGradient,
@@ -88,7 +83,7 @@ class _TimelineBarState extends State<TimelineBar> {
                               ),
                               // Handle
                               Positioned(
-                                left: (widget.progress * constraints.maxWidth) - 10,
+                                left: (progress * constraints.maxWidth) - 10,
                                 top: -8,
                                 child: Container(
                                   width: 20,
@@ -115,7 +110,7 @@ class _TimelineBarState extends State<TimelineBar> {
               ),
               const SizedBox(width: 15),
               // Live indicator
-              if (widget.isLive)
+              if (isLive)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(

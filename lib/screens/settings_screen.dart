@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_container.dart';
 
@@ -152,44 +153,35 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Widget _buildSettingsCard(BuildContext context, List<_SettingsItem> items) {
-    return ClipRRect(
+    return GlassContainer(
       borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: AppTheme.glassBlur, sigmaY: AppTheme.glassBlur),
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppTheme.glassBackground,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.glassBorder, width: 1),
-          ),
-          child: Column(
-            children: items.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              return Column(
-                children: [
-                  ListTile(
-                    leading: Icon(item.icon, color: AppTheme.accentBlue, size: 22),
-                    title: Text(
-                      item.title,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-                    ),
-                    trailing: item.trailing ?? (item.onTap != null
-                        ? const Icon(Icons.chevron_right, color: AppTheme.textSecondary, size: 20)
-                        : null),
-                    onTap: item.onTap,
-                  ),
-                  if (index < items.length - 1)
-                    Divider(
-                      height: 1,
-                      indent: 56,
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: items.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          return Column(
+            children: [
+              ListTile(
+                leading: Icon(item.icon, color: AppTheme.accentBlue, size: 22),
+                title: Text(
+                  item.title,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                ),
+                trailing: item.trailing ?? (item.onTap != null
+                    ? const Icon(Icons.chevron_right, color: AppTheme.textSecondary, size: 20)
+                    : null),
+                onTap: item.onTap,
+              ),
+              if (index < items.length - 1)
+                Divider(
+                  height: 1,
+                  indent: 56,
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
+            ],
+          );
+        }).toList(),
       ),
     );
   }
@@ -204,10 +196,11 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _showHelpDialog(BuildContext context) {
+    final scaffoldContext = context;
     showDialog(
       context: context,
-      builder: (context) => BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+      builder: (dialogContext) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: AppTheme.glassBlurScrim, sigmaY: AppTheme.glassBlurScrim),
         child: Dialog(
           backgroundColor: Colors.transparent,
           child: GlassContainer(
@@ -228,15 +221,33 @@ class SettingsScreen extends StatelessWidget {
                   style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.5),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'support@tracememories.app',
-                  style: TextStyle(color: AppTheme.accentBlue, fontWeight: FontWeight.w600),
+                GestureDetector(
+                  onTap: () {
+                    Clipboard.setData(const ClipboardData(text: 'support@tracememories.app'));
+                    ScaffoldMessenger.of(scaffoldContext).showSnackBar(
+                      const SnackBar(
+                        content: Text('メールアドレスをコピーしました'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'support@tracememories.app',
+                        style: TextStyle(color: AppTheme.accentBlue, fontWeight: FontWeight.w600),
+                      ),
+                      SizedBox(width: 6),
+                      Icon(Icons.copy, size: 14, color: AppTheme.accentBlue),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(dialogContext),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.accentBlue,
                       foregroundColor: AppTheme.primaryDark,

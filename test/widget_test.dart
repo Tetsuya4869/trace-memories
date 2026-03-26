@@ -32,6 +32,23 @@ void main() {
       final result = service.generateSummary(path: path, photos: []);
       expect(result, contains('km'));
     });
+
+    test('1点のパスで0メートル表示', () {
+      final path = [
+        Position(latitude: 35.6580, longitude: 139.7016, timestamp: DateTime.now(), accuracy: 0, altitude: 0, heading: 0, speed: 0, speedAccuracy: 0, altitudeAccuracy: 0, headingAccuracy: 0),
+      ];
+      final result = service.generateSummary(path: path, photos: []);
+      expect(result, contains('0メートル'));
+    });
+
+    test('パスあり写真なしでカメラ未使用メッセージ', () {
+      final path = [
+        Position(latitude: 35.6580, longitude: 139.7016, timestamp: DateTime.now(), accuracy: 0, altitude: 0, heading: 0, speed: 0, speedAccuracy: 0, altitudeAccuracy: 0, headingAccuracy: 0),
+        Position(latitude: 35.6590, longitude: 139.7020, timestamp: DateTime.now(), accuracy: 0, altitude: 0, heading: 0, speed: 0, speedAccuracy: 0, altitudeAccuracy: 0, headingAccuracy: 0),
+      ];
+      final result = service.generateSummary(path: path, photos: []);
+      expect(result, contains('カメラは使わなかった'));
+    });
   });
 
   group('距離計算', () {
