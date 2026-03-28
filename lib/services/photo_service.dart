@@ -44,26 +44,30 @@ class PhotoService {
 
     List<PhotoMemory> memories = [];
     
-    for (var entity in entities) {
+    for (final entity in entities) {
       if (entity.createDateTime.year == date.year &&
           entity.createDateTime.month == date.month &&
           entity.createDateTime.day == date.day) {
-        
-        final latlng = await entity.latlngAsync();
-        
-        if (latlng != null && latlng.latitude != 0 && latlng.longitude != 0) {
-          final thumbnail = await entity.thumbnailDataWithSize(
-            const ThumbnailSize(200, 200),
-          );
-          
-          memories.add(PhotoMemory(
-            id: entity.id,
-            entity: entity,
-            latitude: latlng.latitude,
-            longitude: latlng.longitude,
-            dateTime: entity.createDateTime,
-            thumbnail: thumbnail,
-          ));
+        try {
+          final latlng = await entity.latlngAsync();
+
+          if (latlng != null && latlng.latitude != 0 && latlng.longitude != 0) {
+            final thumbnail = await entity.thumbnailDataWithSize(
+              const ThumbnailSize(200, 200),
+            );
+
+            memories.add(PhotoMemory(
+              id: entity.id,
+              entity: entity,
+              latitude: latlng.latitude,
+              longitude: latlng.longitude,
+              dateTime: entity.createDateTime,
+              thumbnail: thumbnail,
+            ));
+          }
+        } catch (_) {
+          // 個別の写真読み込み失敗はスキップして続行
+          continue;
         }
       }
     }

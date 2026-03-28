@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -343,17 +344,17 @@ class _WebMapScreenState extends State<WebMapScreen> {
 class _TrianglePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
+    final trianglePaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.15)
       ..style = PaintingStyle.fill;
 
-    final path = Path()
+    final trianglePath = ui.Path()
       ..moveTo(0, 0)
       ..lineTo(size.width, 0)
       ..lineTo(size.width / 2, size.height)
       ..close();
 
-    canvas.drawPath(path, paint);
+    canvas.drawPath(trianglePath, trianglePaint);
   }
 
   @override

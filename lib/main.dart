@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'theme/app_theme.dart';
 import 'screens/map_screen.dart';
 import 'screens/web_map_screen.dart';
@@ -9,13 +8,6 @@ import 'screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Load environment variables
-  try {
-    await dotenv.load(fileName: ".env");
-  } catch (_) {
-    // .env がなくても続行（Web版はデモモード、ネイティブ版はトークン未設定状態）
-  }
 
   // Set system UI overlay style for immersive experience (native only)
   if (!kIsWeb) {

@@ -4,9 +4,9 @@ import 'package:geolocator/geolocator.dart' as geo;
 class LocationService {
   StreamSubscription<geo.Position>? _positionStreamSubscription;
   final _controller = StreamController<List<geo.Position>>.broadcast();
-  
+
   List<geo.Position> _path = [];
-  
+
   Stream<List<geo.Position>> get pathStream => _controller.stream;
   List<geo.Position> get currentPath => _path;
 
@@ -22,9 +22,9 @@ class LocationService {
       permission = await geo.Geolocator.requestPermission();
       if (permission == geo.LocationPermission.denied) return false;
     }
-    
+
     if (permission == geo.LocationPermission.deniedForever) return false;
-    
+
     return true;
   }
 
@@ -38,7 +38,7 @@ class LocationService {
       locationSettings: locationSettings,
     ).listen(
       (geo.Position position) {
-        _path.add(position);
+        _path = [..._path, position];
         _controller.add(List.from(_path));
       },
       onError: (Object error) {
@@ -57,10 +57,9 @@ class LocationService {
     stopTracking();
     _controller.close();
   }
-  
+
   void clearPath() {
     _path = [];
     _controller.add([]);
   }
-  
 }

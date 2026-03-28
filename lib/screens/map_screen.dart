@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import '../theme/app_theme.dart';
 import '../widgets/photo_card.dart';
@@ -28,6 +27,7 @@ class _MapScreenState extends State<MapScreen> {
   final PhotoService _photoService = PhotoService();
   final SummaryService _summaryService = SummaryService();
 
+  static const _mapboxToken = String.fromEnvironment('MAPBOX_PUBLIC_TOKEN');
   StreamSubscription<List<geo.Position>>? _pathSubscription;
 
   double _timelineProgress = 1.0;
@@ -40,7 +40,9 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-    MapboxOptions.setAccessToken(dotenv.env['MAPBOX_PUBLIC_TOKEN'] ?? '');
+    if (_mapboxToken.isNotEmpty) {
+      MapboxOptions.setAccessToken(_mapboxToken);
+    }
     _initServices();
   }
 
@@ -52,25 +54,33 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _initServices() async {
-    final hasLocPermission = await _locationService.handlePermission();
-    if (hasLocPermission) {
-      _locationService.startTracking();
-      _pathSubscription = _locationService.pathStream.listen((path) {
-        if (mounted) {
-          setState(() => _currentPath = path);
-          _updateRouteLayer();
-        }
-      });
-    } else {
-      if (mounted) setState(() => _hasLocationPermission = false);
-    }
+    try {
+      final hasLocPermission = await _locationService.handlePermission();
+      if (hasLocPermission) {
+        _locationService.startTracking();
+        _pathSubscription = _locationService.pathStream.listen((path) {
+          if (mounted) {
+            setState(() => _currentPath = path);
+            _updateRouteLayer();
+          }
+        });
+      } else {
+        if (mounted) setState(() => _hasLocationPermission = false);
+      }
 
-    final hasPhotoPermission = await _photoService.requestPermission();
-    if (hasPhotoPermission) {
-      await _loadPhotos();
-      _autoZoomToFirstMemory();
-    } else {
-      if (mounted) setState(() => _hasPhotoPermission = false);
+      final hasPhotoPermission = await _photoService.requestPermission();
+      if (hasPhotoPermission) {
+        await _loadPhotos();
+        _autoZoomToFirstMemory();
+      } else {
+        if (mounted) setState(() => _hasPhotoPermission = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('サービスの初期化に失敗しました: $e')),
+        );
+      }
     }
   }
 
@@ -86,16 +96,17 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _autoZoomToFirstMemory() {
-    if (_photoMemories.isNotEmpty && _mapboxMap != null) {
-      final first = _photoMemories.last;
-      if (first.latitude != null && first.longitude != null) {
-        _mapboxMap?.setCamera(CameraOptions(
-          center: Point(coordinates: Position(first.longitude!, first.latitude!)),
-          zoom: 15.0,
-          pitch: 60.0,
-        ));
-      }
-    }
+    if (_mapboxMap == null) return;
+    final withCoords = _photoMemories.where(
+      (m) => m.latitude != null && m.longitude != null,
+    );
+    if (withCoords.isEmpty) return;
+    final first = withCoords.last;
+    _mapboxMap?.setCamera(CameraOptions(
+      center: Point(coordinates: Position(first.longitude!, first.latitude!)),
+      zoom: 15.0,
+      pitch: 60.0,
+    ));
   }
 
   Future<void> _updateRouteLayer() async {
@@ -134,6 +145,24 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_mapboxToken.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppTheme.primaryDark,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: AppTheme.accentBlue, size: 48),
+              const SizedBox(height: 16),
+              const Text('Mapboxトークンが設定されていません', style: TextStyle(color: Colors.white, fontSize: 16)),
+              const SizedBox(height: 8),
+              Text('--dart-define=MAPBOX_PUBLIC_TOKEN=... を指定してください', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: Stack(
         children: [
@@ -197,10 +226,7 @@ class _MapScreenState extends State<MapScreen> {
       return (idx / _photoMemories.length) <= _timelineProgress;
     }).toList();
 
-    return filtered.map((photo) {
-      if (photo.latitude == null || photo.longitude == null) {
-        return const SizedBox.shrink();
-      }
+    return filtered.where((p) => p.latitude != null && p.longitude != null).map((photo) {
       return FutureBuilder<ScreenCoordinate?>(
         future: _mapboxMap?.pixelForCoordinate(Point(coordinates: Position(photo.longitude!, photo.latitude!))),
         builder: (context, snapshot) {
