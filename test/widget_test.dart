@@ -14,5 +14,8 @@ void main() {
       // OnboardingScreenまたはMapScreenが表示されるはず
       expect(find.byType(TraceMemoriesApp), findsOneWidget);
     }
+
+    // タイマー（アニメーション等）を完了させる
+    await tester.pumpAndSettle(const Duration(seconds: 5));
   });
 }

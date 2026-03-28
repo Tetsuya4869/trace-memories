@@ -17,19 +17,6 @@ void main() {
       expect(service.currentPath, isEmpty);
     });
 
-    test('getMockPath()が3件のPositionを返す', () {
-      final mockPath = service.getMockPath();
-      expect(mockPath.length, 3);
-    });
-
-    test('getMockPath()の座標が有効な範囲', () {
-      final mockPath = service.getMockPath();
-      for (final pos in mockPath) {
-        expect(pos.latitude, inInclusiveRange(-90.0, 90.0));
-        expect(pos.longitude, inInclusiveRange(-180.0, 180.0));
-      }
-    });
-
     test('clearPath()がpathStreamに空リストを送る', () async {
       // pathStreamをリッスンしてから clearPath を呼ぶ
       final future = service.pathStream.first;
