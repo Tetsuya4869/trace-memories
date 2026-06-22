@@ -55,9 +55,10 @@ class _WebMapScreenState extends State<WebMapScreen> {
   }
 
   List<DemoPhotoMemory> _getVisiblePhotos() {
+    if (_demoPhotos.isEmpty) return [];
     return _demoPhotos.where((photo) {
       final idx = _demoPhotos.indexOf(photo);
-      return (idx / _demoPhotos.length) <= _timelineProgress;
+      return ((idx + 1) / _demoPhotos.length) <= _timelineProgress;
     }).toList();
   }
 

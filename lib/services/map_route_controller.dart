@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import '../theme/app_theme.dart';
@@ -12,11 +13,22 @@ class MapRouteController {
 
   MapboxMap? _mapboxMap;
   PolylineAnnotationManager? _polylineManager;
+  VoidCallback? _onMapReady;
 
-  MapboxMap? get mapboxMap => _mapboxMap;
+  bool get isMapReady => _mapboxMap != null;
 
   void onMapCreated(MapboxMap mapboxMap) {
     _mapboxMap = mapboxMap;
+    _onMapReady?.call();
+    _onMapReady = null;
+  }
+
+  void whenReady(VoidCallback callback) {
+    if (isMapReady) {
+      callback();
+    } else {
+      _onMapReady = callback;
+    }
   }
 
   Future<void> updateRouteLayer(List<geo.Position> path, double progress) async {
@@ -39,18 +51,23 @@ class MapRouteController {
   }
 
   void zoomToMemory(PhotoMemory memory) {
-    if (_mapboxMap == null) return;
+    final lat = memory.latitude;
+    final lng = memory.longitude;
+    if (_mapboxMap == null || lat == null || lng == null) return;
     _mapboxMap?.setCamera(CameraOptions(
-      center: Point(coordinates: Position(memory.longitude!, memory.latitude!)),
+      center: Point(coordinates: Position(lng, lat)),
       zoom: _overviewZoom,
       pitch: _cameraPitch,
     ));
   }
 
   void flyToMemory(PhotoMemory memory) {
+    final lat = memory.latitude;
+    final lng = memory.longitude;
+    if (_mapboxMap == null || lat == null || lng == null) return;
     _mapboxMap?.flyTo(
       CameraOptions(
-        center: Point(coordinates: Position(memory.longitude!, memory.latitude!)),
+        center: Point(coordinates: Position(lng, lat)),
         zoom: _focusZoom,
         pitch: _cameraPitch,
       ),
@@ -59,8 +76,13 @@ class MapRouteController {
   }
 
   Future<ScreenCoordinate?> pixelForMemory(PhotoMemory memory) {
-    return _mapboxMap?.pixelForCoordinate(
-      Point(coordinates: Position(memory.longitude!, memory.latitude!)),
-    ) ?? Future.value(null);
+    final lat = memory.latitude;
+    final lng = memory.longitude;
+    if (_mapboxMap == null || lat == null || lng == null) {
+      return Future.value(null);
+    }
+    return _mapboxMap!.pixelForCoordinate(
+      Point(coordinates: Position(lng, lat)),
+    );
   }
 }

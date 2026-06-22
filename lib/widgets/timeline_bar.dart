@@ -7,7 +7,7 @@ class TimelineBar extends StatefulWidget {
   final double progress; // 0.0 to 1.0
   final ValueChanged<double>? onProgressChanged;
   final bool isLive;
-  
+
   const TimelineBar({
     super.key,
     required this.selectedDate,
@@ -21,6 +21,15 @@ class TimelineBar extends StatefulWidget {
 }
 
 class _TimelineBarState extends State<TimelineBar> {
+  static const double _handleSize = 20;
+  static const double _trackHeight = 4;
+  static const double _hitTargetHeight = 40;
+
+  void _updateProgress(double localX, double trackWidth) {
+    if (widget.onProgressChanged == null || trackWidth <= 0) return;
+    widget.onProgressChanged!((localX / trackWidth).clamp(0.0, 1.0));
+  }
+
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
@@ -37,7 +46,6 @@ class _TimelineBarState extends State<TimelineBar> {
           ),
           child: Row(
             children: [
-              // Date display
               Text(
                 _formatDate(widget.selectedDate),
                 style: const TextStyle(
@@ -46,62 +54,69 @@ class _TimelineBarState extends State<TimelineBar> {
                 ),
               ),
               const SizedBox(width: 15),
-              // Slider
               Expanded(
-                child: GestureDetector(
-                  onHorizontalDragUpdate: (details) {
-                    if (widget.onProgressChanged != null) {
-                      final RenderBox box = context.findRenderObject() as RenderBox;
-                      final width = box.size.width - 150; // Account for padding and text
-                      final newProgress = (details.localPosition.dx - 80) / width;
-                      widget.onProgressChanged!(newProgress.clamp(0.0, 1.0));
-                    }
-                  },
-                  child: Container(
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceDark,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        // Progress fill
-                        FractionallySizedBox(
-                          widthFactor: widget.progress,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: AppTheme.routeGradient,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-                        // Handle
-                        Positioned(
-                          left: (widget.progress * (MediaQuery.of(context).size.width - 200)) - 10,
-                          top: -8,
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: AppTheme.accentBlue,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.accentBlue.withValues(alpha: 0.5),
-                                  blurRadius: 10,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final trackWidth = constraints.maxWidth;
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onHorizontalDragUpdate: (details) =>
+                          _updateProgress(details.localPosition.dx, trackWidth),
+                      onTapUp: (details) =>
+                          _updateProgress(details.localPosition.dx, trackWidth),
+                      child: SizedBox(
+                        height: _hitTargetHeight,
+                        child: Center(
+                          child: SizedBox(
+                            height: _trackHeight,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.surfaceDark,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                FractionallySizedBox(
+                                  widthFactor: widget.progress,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: AppTheme.routeGradient,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  left: (widget.progress * trackWidth) -
+                                      _handleSize / 2,
+                                  top: -(_handleSize - _trackHeight) / 2,
+                                  child: Container(
+                                    width: _handleSize,
+                                    height: _handleSize,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentBlue,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppTheme.accentBlue
+                                              .withValues(alpha: 0.5),
+                                          blurRadius: 10,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(width: 15),
-              // Live indicator
               if (widget.isLive)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -124,9 +139,9 @@ class _TimelineBarState extends State<TimelineBar> {
       ),
     );
   }
-  
+
   String _formatDate(DateTime date) {
-    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
                     'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
     return '${months[date.month - 1]} ${date.day}';
   }

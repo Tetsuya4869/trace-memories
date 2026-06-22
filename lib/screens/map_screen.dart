@@ -40,11 +40,13 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
+    MapboxOptions.setAccessToken(dotenv.env['MAPBOX_PUBLIC_TOKEN'] ?? "");
     _initServices();
   }
 
   Future<void> _initServices() async {
     final hasLocPermission = await _locationService.handlePermission();
+    if (!mounted) return;
     if (hasLocPermission) {
       _locationService.startTracking();
       _pathSubscription = _locationService.pathStream.listen((path) {
@@ -53,7 +55,7 @@ class _MapScreenState extends State<MapScreen> {
           _mapController.updateRouteLayer(_currentPath, _timelineProgress);
         }
       });
-    } else if (mounted) {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('位置情報の権限が必要です。設定から許可してください。'),
@@ -63,10 +65,15 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     final hasPhotoPermission = await _photoService.requestPermission();
+    if (!mounted) return;
     if (hasPhotoPermission) {
       await _loadPhotos();
-      _autoZoomToFirstMemory();
-    } else if (mounted) {
+      if (mounted && _photoMemories.isNotEmpty) {
+        _mapController.whenReady(() {
+          if (mounted) _mapController.zoomToMemory(_photoMemories.last);
+        });
+      }
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('写真ライブラリへのアクセスを許可すると、思い出を地図に表示できます。'),
@@ -77,6 +84,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _loadPhotos() async {
+    if (!mounted) return;
     setState(() => _isLoadingPhotos = true);
     final memories = await _photoService.getMemoriesForDate(DateTime.now());
     if (mounted) {
@@ -84,12 +92,6 @@ class _MapScreenState extends State<MapScreen> {
         _photoMemories = memories;
         _isLoadingPhotos = false;
       });
-    }
-  }
-
-  void _autoZoomToFirstMemory() {
-    if (_photoMemories.isNotEmpty) {
-      _mapController.zoomToMemory(_photoMemories.last);
     }
   }
 
@@ -111,10 +113,16 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  List<PhotoMemory> _filteredPhotos() {
+    if (_photoMemories.isEmpty) return [];
+    return _photoMemories.where((m) {
+      final idx = _photoMemories.indexOf(m);
+      return ((idx + 1) / _photoMemories.length) <= _timelineProgress;
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
-    MapboxOptions.setAccessToken(dotenv.env['MAPBOX_PUBLIC_TOKEN'] ?? "");
-
     return Scaffold(
       body: Stack(
         children: [
@@ -140,11 +148,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   List<Widget> _buildPhotoCards() {
-    final filtered = _photoMemories.where((m) {
-      if (_photoMemories.isEmpty) return false;
-      final idx = _photoMemories.indexOf(m);
-      return (idx / _photoMemories.length) <= _timelineProgress;
-    }).toList();
+    final filtered = _filteredPhotos();
 
     return filtered.map((photo) {
       return FutureBuilder<ScreenCoordinate?>(
@@ -152,8 +156,9 @@ class _MapScreenState extends State<MapScreen> {
         builder: (context, snapshot) {
           if (!snapshot.hasData || snapshot.data == null) return const SizedBox.shrink();
           final pos = snapshot.data!;
-          if (pos.x < -_offScreenMargin || pos.x > MediaQuery.of(context).size.width + _offScreenMargin ||
-              pos.y < -_offScreenMargin || pos.y > MediaQuery.of(context).size.height + _offScreenMargin) {
+          final size = MediaQuery.of(context).size;
+          if (pos.x < -_offScreenMargin || pos.x > size.width + _offScreenMargin ||
+              pos.y < -_offScreenMargin || pos.y > size.height + _offScreenMargin) {
             return const SizedBox.shrink();
           }
 
@@ -223,7 +228,7 @@ class _MapScreenState extends State<MapScreen> {
             const Icon(Icons.auto_awesome, size: 14, color: AppTheme.accentBlue),
             const SizedBox(width: 6),
             Text(
-              '${_photoMemories.length} の思い出',
+              '${_filteredPhotos().length} の思い出',
               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
             ),
           ],
