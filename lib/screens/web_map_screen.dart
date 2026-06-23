@@ -19,9 +19,13 @@ class WebMapScreen extends StatefulWidget {
   State<WebMapScreen> createState() => _WebMapScreenState();
 }
 
-class _WebMapScreenState extends State<WebMapScreen> {
+class _WebMapScreenState extends State<WebMapScreen>
+    with SingleTickerProviderStateMixin {
+  static const Duration _playbackDuration = Duration(seconds: 8);
+
   final MapController _mapController = MapController();
   final SummaryService _summaryService = SummaryService();
+  late final AnimationController _playbackController;
 
   double _timelineProgress = 1.0;
   late List<geo.Position> _demoPath;
@@ -32,6 +36,30 @@ class _WebMapScreenState extends State<WebMapScreen> {
     super.initState();
     _demoPath = DemoData.samplePath;
     _demoPhotos = DemoData.samplePhotos;
+    _playbackController = AnimationController(
+      vsync: this,
+      duration: _playbackDuration,
+    )..addListener(() {
+        setState(() => _timelineProgress = _playbackController.value);
+      });
+  }
+
+  @override
+  void dispose() {
+    _playbackController.dispose();
+    super.dispose();
+  }
+
+  bool get _isPlaying => _playbackController.isAnimating;
+
+  void _togglePlayback() {
+    if (_playbackController.isAnimating) {
+      _playbackController.stop();
+      setState(() {});
+    } else {
+      final from = _timelineProgress >= 1.0 ? 0.0 : _timelineProgress;
+      _playbackController.forward(from: from);
+    }
   }
 
   void _showSummary() {
@@ -298,7 +326,10 @@ class _WebMapScreenState extends State<WebMapScreen> {
         selectedDate: DateTime.now(),
         progress: _timelineProgress,
         isLive: _timelineProgress > 0.95,
+        isPlaying: _isPlaying,
+        onPlayPause: _togglePlayback,
         onProgressChanged: (value) {
+          if (_playbackController.isAnimating) _playbackController.stop();
           setState(() => _timelineProgress = value);
         },
       ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.5, end: 0),

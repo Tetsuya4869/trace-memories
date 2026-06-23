@@ -91,6 +91,8 @@ lib/
 - 進捗値 float (0.0〜1.0) でルート表示と写真フィルタリングを制御
 - 進捗に応じてポリラインを毎フレーム再描画
 - `pixelForCoordinate()` で緯度経度をスクリーン座標に変換して写真カードを配置
+- **再生（オートプレイ）**: 各画面の `AnimationController` (`SingleTickerProviderStateMixin`) が進捗を 0.0→1.0 に駆動し、一日を「映画のように」再生。手動ドラッグ時は自動停止
+- 写真フィルタは `(idx + 1) / length <= progress` で判定（インデックスは0始まりのため +1）
 
 ## デザインシステム
 
@@ -185,3 +187,11 @@ Web版デモモードは `.env` なしでも OpenStreetMap タイルにフォー
 - 地図制御ロジックを `MapRouteController` に抽出
 - マジックナンバーを名前付き定数に置換
 - パーミッション拒否時のSnackBarフィードバックを追加
+
+### 全体見直し（バグ修正・機能改善）
+- **タイムライン再生機能**を実装（タグライン「映画のように再生」を実現）
+- TimelineBarのハンドル位置・ドラッグ計算をLayoutBuilderの実幅ベースに修正、タップ操作対応
+- 写真フィルタのロジックバグを修正（`(idx+1)/length` でタイムライン連動を正常化）
+- `MapboxOptions.setAccessToken` を `build()` から `initState()` に移動
+- async境界での `mounted` チェックを強化
+- `MapRouteController` の null安全性向上（強制アンラップ除去、`whenReady()` でマップ準備待ち）

@@ -7,6 +7,8 @@ class TimelineBar extends StatefulWidget {
   final double progress; // 0.0 to 1.0
   final ValueChanged<double>? onProgressChanged;
   final bool isLive;
+  final bool isPlaying;
+  final VoidCallback? onPlayPause;
 
   const TimelineBar({
     super.key,
@@ -14,6 +16,8 @@ class TimelineBar extends StatefulWidget {
     required this.progress,
     this.onProgressChanged,
     this.isLive = false,
+    this.isPlaying = false,
+    this.onPlayPause,
   });
 
   @override
@@ -46,6 +50,28 @@ class _TimelineBarState extends State<TimelineBar> {
           ),
           child: Row(
             children: [
+              if (widget.onPlayPause != null) ...[
+                GestureDetector(
+                  onTap: widget.onPlayPause,
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentBlue.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      widget.isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      color: AppTheme.accentBlue,
+                      size: 22,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
               Text(
                 _formatDate(widget.selectedDate),
                 style: const TextStyle(

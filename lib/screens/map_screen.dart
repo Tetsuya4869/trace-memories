@@ -21,16 +21,19 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _MapScreenState extends State<MapScreen>
+    with SingleTickerProviderStateMixin {
   static const double _offScreenMargin = 100;
   static const double _cardOffsetX = 60;
   static const double _cardOffsetY = 160;
+  static const Duration _playbackDuration = Duration(seconds: 8);
 
   final LocationService _locationService = LocationService();
   final PhotoService _photoService = PhotoService();
   final SummaryService _summaryService = SummaryService();
   final MapRouteController _mapController = MapRouteController();
   StreamSubscription<List<geo.Position>>? _pathSubscription;
+  late final AnimationController _playbackController;
 
   double _timelineProgress = 1.0;
   List<geo.Position> _currentPath = [];
@@ -41,7 +44,37 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     MapboxOptions.setAccessToken(dotenv.env['MAPBOX_PUBLIC_TOKEN'] ?? "");
+    _playbackController = AnimationController(
+      vsync: this,
+      duration: _playbackDuration,
+    )
+      ..addListener(_onPlaybackTick)
+      ..addStatusListener(_onPlaybackStatus);
     _initServices();
+  }
+
+  void _onPlaybackTick() {
+    setState(() => _timelineProgress = _playbackController.value);
+    _mapController.updateRouteLayer(_currentPath, _timelineProgress);
+  }
+
+  void _onPlaybackStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed ||
+        status == AnimationStatus.dismissed) {
+      if (mounted) setState(() {});
+    }
+  }
+
+  bool get _isPlaying => _playbackController.isAnimating;
+
+  void _togglePlayback() {
+    if (_playbackController.isAnimating) {
+      _playbackController.stop();
+      setState(() {});
+    } else {
+      final from = _timelineProgress >= 1.0 ? 0.0 : _timelineProgress;
+      _playbackController.forward(from: from);
+    }
   }
 
   Future<void> _initServices() async {
@@ -97,6 +130,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
+    _playbackController.dispose();
     _pathSubscription?.cancel();
     _locationService.dispose();
     super.dispose();
@@ -208,7 +242,10 @@ class _MapScreenState extends State<MapScreen> {
         selectedDate: DateTime.now(),
         progress: _timelineProgress,
         isLive: _timelineProgress > 0.95,
+        isPlaying: _isPlaying,
+        onPlayPause: _togglePlayback,
         onProgressChanged: (value) {
+          if (_playbackController.isAnimating) _playbackController.stop();
           setState(() => _timelineProgress = value);
           _mapController.updateRouteLayer(_currentPath, _timelineProgress);
         },
