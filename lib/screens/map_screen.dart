@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -25,7 +26,8 @@ class _MapScreenState extends State<MapScreen> {
   final LocationService _locationService = LocationService();
   final PhotoService _photoService = PhotoService();
   final SummaryService _summaryService = SummaryService();
-  
+  StreamSubscription<List<geo.Position>>? _pathSubscription;
+
   double _timelineProgress = 1.0;
   List<geo.Position> _currentPath = [];
   List<PhotoMemory> _photoMemories = [];
@@ -37,11 +39,18 @@ class _MapScreenState extends State<MapScreen> {
     _initServices();
   }
 
+  @override
+  void dispose() {
+    _pathSubscription?.cancel();
+    _locationService.stopTracking();
+    super.dispose();
+  }
+
   Future<void> _initServices() async {
     final hasLocPermission = await _locationService.handlePermission();
     if (hasLocPermission) {
       _locationService.startTracking();
-      _locationService.pathStream.listen((path) {
+      _pathSubscription = _locationService.pathStream.listen((path) {
         if (mounted) {
           setState(() => _currentPath = path);
           _updateRouteLayer();
